@@ -1,0 +1,21 @@
+{
+  "name": "twsearch-explorer",
+  "private": true,
+  "type": "module",
+  "description": "Twizzle Explorer with twsearch solving, built on the published cubing package.",
+  "scripts": {
+    "build": "node script/build.mjs",
+    "dev": "node script/build.mjs --serve",
+    "check": "tsc --noEmit",
+    "roll-twsearch": "node script/roll-twsearch.mjs"
+  },
+  "dependencies": {
+    "@fontsource/ubuntu": "5.3.0",
+    "cubing": "0.63.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "playwright": "^1.63.0",
+    "typescript": "^7.0.2"
+  }
+}
