@@ -14,6 +14,27 @@ import { resolve } from "node:path";
 import * as esbuild from "esbuild";
 
 const src = new URL("../src/", import.meta.url).pathname;
+
+// Which cubing.js to build against.  With CUBING_LIB set (the top-level
+// Makefile sets it for `CUBING = local`), "cubing/..." comes from that
+// directory, which is the local cubing.js checkout's build, so changes to it
+// show up here.  Without it, the published cubing package in node_modules is
+// used.  See the Makefile in the directory above this repository.
+const cubingLib = process.env.CUBING_LIB;
+const localCubing = {
+  name: "local-cubing",
+  setup(build) {
+    build.onResolve({ filter: /^cubing\// }, (args) => ({
+      path: `${cubingLib}/${args.path.slice("cubing/".length)}/index.js`,
+    }));
+  },
+};
+const cubingPlugins = cubingLib ? [localCubing] : [];
+console.log(
+  cubingLib
+    ? `cubing.js: the local checkout (${cubingLib})`
+    : "cubing.js: the published cubing package in node_modules",
+);
 const assets = ["help.html", "favicon.ico", "app-icon.png"];
 const siteIndex = process.argv.indexOf("--site");
 
@@ -30,6 +51,7 @@ if (siteIndex >= 0) {
     minify: true,
     write: false,
     define: { "import.meta.url": "self.location.href" },
+    plugins: cubingPlugins,
     logLevel: "warning",
   });
   await esbuild.build({
@@ -45,6 +67,7 @@ if (siteIndex >= 0) {
     },
     loader: { ".woff": "file", ".woff2": "file" },
     assetNames: "assets/[name]-[hash]",
+    plugins: cubingPlugins,
     logLevel: "warning",
   });
   for (const file of assets) cpSync(src + file, `${out}/${file}`);
@@ -68,7 +91,7 @@ if (siteIndex >= 0) {
     },
   };
   const options = {
-    plugins: [copyStatic],
+    plugins: [copyStatic, ...cubingPlugins],
     entryPoints: [src + "main.ts", src + "twsearch-worker.ts", src + "index.css"],
     outdir: dist,
     bundle: true,

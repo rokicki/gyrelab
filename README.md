@@ -64,3 +64,13 @@ vendoring, and this) into `../site/`.
 - `test/colors-test.ts` (`node test/run-ts.mjs test/colors-test.ts`):
   colors round trip and reachability, compared with twsearch
 - `test/painter-test.mjs`: drives the Colors tab in headless Chrome
+
+## Which cubing.js
+
+By default the build uses the published `cubing` package pinned in
+`package.json`.  Setting `CUBING_LIB` to the `dist/lib/cubing` directory of a
+cubing.js checkout builds against that instead, which is how changes being
+made there (a Scramble fix, say) can be tried here.  The Makefile one
+directory up has a switch for it: `make site` uses the checkout,
+`make site CUBING=npm` uses the package.  Every build prints which one it
+used.  `test/run-ts.mjs` honors `CUBING_LIB` as well.
