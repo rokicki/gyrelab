@@ -1,4 +1,4 @@
-// Checks the Solve tab's "Export..." popup: the file it shows must be a
+// Checks the Solver tab's "Export..." popup: the file it shows must be a
 // complete twsearch input (puzzle plus the position to solve), and native
 // twsearch must solve it with the command line the popup gives.
 //

@@ -1,7 +1,7 @@
 # Explorer with twsearch
 
 The Twizzle Explorer (from cubing.js's `src/sites/alpha.twizzle.net/explore/`)
-with a Solve tab that solves the displayed position at the end of the alg
+with a Solver tab that solves the displayed position at the end of the alg
 (including Scramble-button setups) with twsearch: natively through the twsearch bridge when it is running on this
 computer, otherwise with the WebAssembly build in the browser.
 
@@ -34,10 +34,10 @@ vendoring, and this) into `../site/`.
 ## Files
 
 - `src/`: the Explorer (`index.html`, `app.ts`, ...), plus
-  - `solve-panel.ts`: the Solve tab
+  - `solve-panel.ts`: the Solver tab
   - `twsearch-channel.ts`: one interface over the bridge and the Worker
   - `twsearch-state.ts`: maps the displayed state onto twsearch's puzzle
-  - `move-set.ts`, `reachability.ts`: the move set (Solve tab) and the
+  - `move-set.ts`, `reachability.ts`: the move set (Solver tab) and the
     reachability check for the puzzle and move set
   - `color-painter.ts`, `sticker-colors.ts`, `color-check.ts`,
     `schreier-sims.ts`: the Colors tab (paint a position on the 2D net and
@@ -56,7 +56,7 @@ vendoring, and this) into `../site/`.
   must be positions twsearch accepts (catches look-alike pieces read wrong)
 - `test/omission-test.ts`: --nocorners, --omit, and friends: our
   reachability verdicts against twsearch's under the same options
-- `test/moveset-ui-test.mjs`: the Solve tab's move set in headless Chrome
+- `test/moveset-ui-test.mjs`: the Solver tab's move set in headless Chrome
 - `test/convention-probe.ts`: how ksolve moves correspond to KPuzzle
   transformations (permutation equal; orientationDelta[i] = ori[perm[i]])
 - `test/scramble-reach.ts`: Scramble-button states, our verdict, and

@@ -93,7 +93,7 @@ export class ColorPainter {
         this.#painting = false;
       });
     }
-    // Positions are checked against the move set (set on the Solve tab).
+    // Positions are checked against the move set (set on the Solver tab).
     moveSetEvents.addEventListener("change", () => {
       if (this.puzzle) this.scheduleValidate();
     });
@@ -240,8 +240,8 @@ export class ColorPainter {
     const validation = ++this.#validation;
     const moveSetText = getMoveSetText(puzzle.description).trim();
     this.moveSetElem.textContent = moveSetText
-      ? `Checking against the move set ${moveSetText} (set on the Solve tab).`
-      : "Checking against the default move set (a move set can be set on the Solve tab).";
+      ? `Checking against the move set ${moveSetText} (set on the Solver tab).`
+      : "Checking against the default move set (a move set can be set on the Solver tab).";
     const problems: Problem[] = [];
     let checks: PuzzleChecks | null = null;
     try {

@@ -12,7 +12,7 @@ import {
 } from "./twsearch-state";
 
 // The sticker model and reachability checker for the Explorer's current
-// puzzle and move set, built once and shared by the Colors and Solve tabs.
+// puzzle and move set, built once and shared by the Colors and Solver tabs.
 
 export interface PuzzleChecks {
   description: string;

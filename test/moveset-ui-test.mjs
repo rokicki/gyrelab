@@ -1,4 +1,4 @@
-// The Solve tab's move set, in headless Chrome.  Start `npm run dev` first.
+// The Solver tab's move set, in headless Chrome.  Start `npm run dev` first.
 import { chromium } from "playwright";
 const base = process.env.EXPLORER_URL ?? "http://localhost:3334/";
 const browser = await chromium.launch({ channel: "chrome", headless: true });

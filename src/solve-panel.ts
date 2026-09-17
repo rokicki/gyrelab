@@ -296,7 +296,9 @@ export class TwsearchSolvePanel {
           ? `Searching (pruning table depth ${match[1]} filled)`
           : `Building pruning table (depth ${match[1]} filled)`;
       } else if ((match = line.match(/^Depth (\d+) in /))) {
-        phase = `Searching (depth ${match[1]} finished)`;
+        // twsearch reports each depth as it finishes it, so it is now
+        // searching the next one.
+        phase = `Searching depth ${Number(match[1]) + 1}`;
       } else if (line.startsWith("Solving")) {
         searching = true;
         phase = "Searching";

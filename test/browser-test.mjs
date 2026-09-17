@@ -66,7 +66,7 @@ if (mode === "screenshot") {
   await solve("wasm megaminx", { puzzle: "megaminx", alg: "R U2 F' BL", channel: "wasm" });
   await solve("wasm rotation", { alg: "R U Lv", channel: "wasm" });
   await solve("wasm slice", { alg: "R 2L", channel: "wasm" });
-  // Clicking the puzzle while the Solve tab is shown must not make a move.
+  // Clicking the puzzle while the Solver tab is shown must not make a move.
   await open("3x3x3", "R U");
   await page.click('button[data-tab-id="twsearch-solve"]');
   const box = await page.locator("twisty-player").boundingBox();
@@ -76,7 +76,7 @@ if (mode === "screenshot") {
   await page.click('button[data-tab-id="editor"]');
   await page.mouse.click(box.x + box.width * 0.25, box.y + box.height * 0.4);
   await page.waitForTimeout(700);
-  console.log(ts(), "alg after clicking the puzzle: Solve tab ->", JSON.stringify(afterSolveTabClick), "; Edit Alg tab ->", JSON.stringify(new URL(page.url()).searchParams.get("alg")));
+  console.log(ts(), "alg after clicking the puzzle: Solver tab ->", JSON.stringify(afterSolveTabClick), "; Edit Alg tab ->", JSON.stringify(new URL(page.url()).searchParams.get("alg")));
   for (let trial = 0; trial < 3; trial++) for (const puzzle of ["2x2x2", "skewb", "pyraminx", "dino", "megaminx"]) {
     if (puzzle === "megaminx" && trial > 0) continue;
     const found = await solve(`wasm ${puzzle} Scramble button`, { puzzle, alg: "", channel: "wasm", scramble: true });
