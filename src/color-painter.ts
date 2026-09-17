@@ -11,7 +11,11 @@ import {
   type StickerModel,
   solvedColors,
 } from "./sticker-colors";
-import { setAlgParamEnabled } from "./url-params";
+
+/** A comparable form of a painting, for noticing changes. */
+function serializeColors(colors: Colors): string {
+  return [...colors].map(([key, color]) => `${key}=${color ?? ""}`).sort().join(" ");
+}
 
 // The Colors tab: paint sticker colors on the puzzle's 2D net (shown in place
 // of the 3D puzzle while the tab is open) and check the result.  Whenever a
@@ -60,6 +64,11 @@ export class ColorPainter {
   #picked = false;
   /** The last position applied, to avoid applying it again. */
   #applied: string | null = null;
+  // The colors of the Explorer's position when the net was last synced with
+  // it, so that returning to the tab notices a position changed elsewhere
+  // (by solving, by editing the alg, by Scramble) without discarding a
+  // painting in progress when nothing changed.
+  #fromPosition: string | null = null;
   #validateTimer: ReturnType<typeof setTimeout> | undefined;
   #validation = 0; // to ignore results of superseded validations
   #painting = false;
@@ -113,7 +122,16 @@ export class ColorPainter {
 
   async show(): Promise<void> {
     const description = this.app.configUI.descInput.value;
-    if (this.puzzle?.description === description) return;
+    if (this.puzzle?.description === description) {
+      // Same puzzle: keep the net, but follow the position if it moved on
+      // another tab.
+      const colors = await this.currentPositionColors();
+      if (colors && serializeColors(colors) !== this.#fromPosition) {
+        this.setColors(colors, false);
+        this.#fromPosition = serializeColors(colors);
+      }
+      return;
+    }
     const pg = await this.app.puzzleGeometry();
     const model = await stickerModel(this.app);
 
@@ -187,11 +205,19 @@ export class ColorPainter {
     if (keys) this.selectColor(this.colors.get(keys[0]) ?? null);
   }
 
-  async fromCurrentPosition(): Promise<void> {
-    if (!this.puzzle) return;
+  /** The colors of the Explorer's current position, for this puzzle. */
+  async currentPositionColors(): Promise<Colors | null> {
+    if (!this.puzzle) return null;
     const model = this.app.twistyPlayer.experimentalModel;
     const [start, alg] = await Promise.all([model.anchorTransformation.get(), model.puzzleAlg.get()]);
-    this.setColors(patternToColors(this.puzzle.model, start.applyAlg(alg.alg).toKPattern()), false);
+    return patternToColors(this.puzzle.model, start.applyAlg(alg.alg).toKPattern());
+  }
+
+  async fromCurrentPosition(): Promise<void> {
+    const colors = await this.currentPositionColors();
+    if (!colors) return;
+    this.setColors(colors, false);
+    this.#fromPosition = serializeColors(colors);
   }
 
   /** picked: whether this is a user's pick (which, if valid, is applied). */
@@ -304,12 +330,14 @@ export class ColorPainter {
 
   /** Makes the position the Explorer's: set as the setup, alg cleared. */
   async applyPosition(data: KTransformationData): Promise<void> {
+    // The net now shows the Explorer's position, so leaving and returning
+    // must not treat it as a change made elsewhere.
+    this.#fromPosition = serializeColors(this.colors);
     const player = this.app.twistyPlayer;
     const kpuzzle = await player.experimentalModel.kpuzzle.get();
     player.alg = "";
     player.experimentalSetupAlg = "";
     player.experimentalSetupAnchor = "start";
     player.experimentalModel.setupTransformation.set(new KTransformation(kpuzzle, data));
-    setAlgParamEnabled(false);
   }
 }

@@ -106,6 +106,25 @@ await page.click("#twsearch-solve-button");
 await page.waitForFunction(() => !document.querySelector("#twsearch-solve-button").disabled && document.querySelector("#twsearch-status").textContent, null, { timeout: 120000 });
 console.log(ts(), "solve:", await page.textContent("#twsearch-status"), JSON.stringify(await page.$$eval("#twsearch-solutions button", (b) => b.map((x) => x.textContent))));
 
+// Leaving the tab and coming back must show the Explorer's position, not
+// whatever was last painted: otherwise the next pick applies a stale
+// position and silently discards the alg.
+await page.click('button[data-tab-id="twsearch-solve"]');
+await page.evaluate(() => { globalThis.app.twistyPlayer.alg = "R U F"; });
+await page.waitForTimeout(700);
+await page.click('button[data-tab-id="color-picker"]');
+await report("back on Colors after the alg changed to R U F");
+
+// With the position unchanged, a painting in progress survives the trip.
+await page.click("#color-clear");
+await page.waitForTimeout(300);
+await page.click('button[data-tab-id="twsearch-solve"]');
+await page.waitForTimeout(300);
+await page.click('button[data-tab-id="color-picker"]');
+await page.waitForTimeout(500);
+console.log(ts(), "cleared painting kept across a tab trip:",
+  (await page.evaluate(() => [...globalThis.app.colorPainter.colors.values()].every((c) => c === null))));
+
 // A described (custom) puzzle.
 await page.goto(`${base}?puzzle-description=${encodeURIComponent("c f 0.2 v 0.8")}`);
 await page.waitForSelector("twisty-player");

@@ -16,7 +16,12 @@ import { ColorPainter } from "./color-painter";
 import { TwsearchSolvePanel } from "./solve-panel";
 import { constructTwistyPlayer } from "./twisty-player";
 import "./TwistyPuzzleDescriptionInput";
-import { getURLParam, setAlgParamEnabled, setURLParams } from "./url-params";
+import {
+  getURLParam,
+  setAlgParam,
+  setAlgParamEnabled,
+  setURLParams,
+} from "./url-params";
 
 export class TwizzleExplorerApp {
   twistyPlayer: TwistyPlayer;
@@ -45,6 +50,23 @@ export class TwizzleExplorerApp {
     this.dialog = new Dialog();
     this.solvePanel = new TwsearchSolvePanel(this, createTwsearchWorker);
     this.colorPainter = new ColorPainter(this);
+    // The URL's alg parameter cannot express a position set up outside the
+    // alg (from Scramble or from the color picker), so it is dropped while
+    // one is in effect and restored once the position is cleared, which
+    // keeps the URL from claiming a position the alg alone does not give.
+    this.twistyPlayer.experimentalModel.setupTransformation.addFreshListener(
+      async (transformation: KTransformation | null) => {
+        const cleared =
+          transformation === null || transformation.isIdentityTransformation();
+        setAlgParamEnabled(cleared);
+        if (cleared) {
+          setAlgParam(
+            "alg",
+            (await this.twistyPlayer.experimentalModel.alg.get()).alg.toString(),
+          );
+        }
+      },
+    );
     // While the Solve or Colors tab is shown, clicking the puzzle must not
     // make moves (that would change the position being worked on).  Dragging
     // to turn the view still works.  The Colors tab replaces the 3D puzzle
@@ -201,7 +223,6 @@ class ConfigUI {
           const pg = await loader.pg!();
           const kpuzzle = await loader.kpuzzle();
           const scrambleTransformationData = pg.getScramble();
-          setAlgParamEnabled(false);
           return new KTransformation(kpuzzle, scrambleTransformationData);
         })(),
       );
@@ -210,7 +231,6 @@ class ConfigUI {
     this.resetButton.addEventListener("click", () => {
       this.app.twistyPlayer.alg = "";
       this.app.twistyPlayer.experimentalModel.setupTransformation.set(null);
-      setAlgParamEnabled(true);
     });
 
     // TODO: connect this to the checkboxes?
