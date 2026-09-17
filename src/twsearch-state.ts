@@ -406,6 +406,11 @@ export function patternToScrambleState(
 
   const out = ["ScrambleState explorer"];
   for (const set of tw.sets) {
+    // With --omitperms (and --omit, which drops the set entirely), twsearch
+    // makes every piece of the set identical when it reads the solved state,
+    // so the scramble has to name the same pieces or its piece counts will
+    // not match.
+    const omitPerm = (omission(set.name) & 1) !== 0;
     const pieces: number[] = [];
     const oris: number[] = [];
     for (let index = 0; index < set.size; index++) {
@@ -421,7 +426,7 @@ export function patternToScrambleState(
           `A ${at.set} piece is somewhere twsearch's puzzle can't move it`,
         );
       }
-      pieces.push(tw.solved.get(set.name)!.perm[home.index]);
+      pieces.push(omitPerm ? 0 : tw.solved.get(set.name)!.perm[home.index]);
       oris.push(orbit.orientation[at.index] % set.mod);
     }
     // Pieces no move moves must be at home, or the position can never be

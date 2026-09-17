@@ -285,6 +285,7 @@ twisty-puzzle-description-input button.add {
   color: #a00000;
 }
 
+#twsearch-help-dialog,
 #twsearch-export-dialog {
   width: min(48em, 90vw);
   max-height: 85vh;
@@ -293,11 +294,13 @@ twisty-puzzle-description-input button.add {
   padding: 1em;
 }
 
+#twsearch-help-dialog h2,
 #twsearch-export-dialog h2 {
   font-size: 1.1em;
   margin: 0 0 0.5em;
 }
 
+#twsearch-help-dialog p,
 #twsearch-export-dialog p {
   margin: 0 0 0.5em;
 }
@@ -323,4 +326,35 @@ twisty-puzzle-description-input button.add {
 #twsearch-export-note {
   font-size: 0.9em;
   color: #060;
+}
+
+#twsearch-help-body {
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+#twsearch-help-body h3 {
+  font-size: 1em;
+  margin: 1em 0 0.3em;
+}
+
+#twsearch-help-body code {
+  background: #eee;
+  padding: 0 0.2em;
+}
+
+#twsearch-help-options {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.15em 0.8em;
+  margin: 0;
+}
+
+#twsearch-help-options dt {
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+#twsearch-help-options dd {
+  margin: 0;
 }

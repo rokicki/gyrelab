@@ -9,6 +9,7 @@ import {
   WasmChannel,
 } from "./twsearch-channel";
 import { getMoveSetText, moveSetEvents, setMoveSetText } from "./move-set";
+import { renderHelpOptions } from "./solver-help";
 import {
   patternToScrambleState,
   setOmissionFromArgs,
@@ -94,6 +95,16 @@ export class TwsearchSolvePanel {
     });
     this.cancelButton.addEventListener("click", () => this.cancel());
     this.exportButton.addEventListener("click", () => void this.showExport());
+    const helpDialog = element<HTMLDialogElement>("twsearch-help-dialog");
+    renderHelpOptions(element("twsearch-help-options"));
+    element<HTMLButtonElement>("twsearch-help-button").addEventListener(
+      "click",
+      () => helpDialog.showModal(),
+    );
+    element<HTMLButtonElement>("twsearch-help-close").addEventListener(
+      "click",
+      () => helpDialog.close(),
+    );
     element<HTMLButtonElement>("twsearch-export-close").addEventListener(
       "click",
       () => this.exportDialog.close(),
@@ -270,6 +281,16 @@ export class TwsearchSolvePanel {
     if (channel === this.wasm && !args.includes("-M")) {
       args.push("-M", String(WASM_DEFAULT_MEGABYTES));
     }
+    if (channel === this.wasm) {
+      // The browser build is single-threaded, and twsearch rejects -t there.
+      const at = args.indexOf("-t");
+      if (at >= 0) {
+        args.splice(at, 2);
+        this.logElem.append(
+          "The browser build is single-threaded; ignoring -t (the native bridge uses it).\n",
+        );
+      }
+    }
     const id = `solve-${this.nextID++}`;
     this.running = { id, channel };
     this.solveButton.disabled = true;
@@ -302,10 +323,16 @@ export class TwsearchSolvePanel {
       } else if (line.startsWith("Solving")) {
         searching = true;
         phase = "Searching";
-      } else if (line.startsWith(" ")) {
+      } else if (searching && line.startsWith(" ")) {
         // twsearch prints ksolve move names, which the Explorer's puzzle
-        // uses too (both come from PuzzleGeometry's notation mapper).
-        this.addSolution(Alg.fromString(line.trim()));
+        // uses too (both come from PuzzleGeometry's notation mapper).  Other
+        // indented output (the usage text after a bad option, say) is not a
+        // solution, so anything that will not parse is left to the log.
+        try {
+          this.addSolution(Alg.fromString(line.trim()));
+        } catch {
+          /* not a move sequence */
+        }
       } else if (line.startsWith("Ignoring unsolvable position")) {
         final =
           "This position can't be reached with the puzzle's moves (perhaps it is rotated relative to the solved puzzle).";

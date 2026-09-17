@@ -127,6 +127,7 @@
           <button id="twsearch-solve-button">Solve</button>
           <button id="twsearch-cancel-button" disabled>Cancel</button>
           <button id="twsearch-export-button">Export...</button>
+          <button id="twsearch-help-button">Help...</button>
           <select id="twsearch-channel">
             <option value="auto" selected>Auto</option>
             <option value="bridge">Native bridge</option>
@@ -142,6 +143,36 @@
           <summary>twsearch output</summary>
           <pre id="twsearch-log"></pre>
         </details>
+        <dialog id="twsearch-help-dialog">
+          <h2>Solving with twsearch</h2>
+          <div class="twsearch-row"><button id="twsearch-help-close">Close</button></div>
+          <div id="twsearch-help-body">
+            <p>The Solver hands twsearch the position at the end of the alg, as a
+              state, and applies the solution you click.  A search runs either in
+              this browser (WebAssembly) or, if the bridge is running on this
+              computer, natively, which is much faster.  <b>Export...</b> gives you
+              the whole search as one file to run with your own twsearch.</p>
+
+            <h3>Move set</h3>
+            <p>Comma separated move names, as this puzzle names them:
+              <code>U,R,F</code>, or <code>u,r,f</code> for a different set of
+              moves.  No spaces.  Leave it blank for the puzzle's own moves.  The
+              move set decides the puzzle twsearch is given, so it also decides
+              which positions count as solvable, in the Colors tab as well.  It is
+              kept per puzzle while the page is open, and is not part of the URL.</p>
+
+            <h3>Options</h3>
+            <p>Anything below can go in the Options field, separated by spaces.
+              <code>--checkbeforesolve</code> is always added, so an unsolvable
+              position is refused instead of searched for ever.</p>
+            <dl id="twsearch-help-options"></dl>
+            <p>twsearch's other commands (<code>-g</code>, <code>--schreiersims</code>
+              and the rest) are not available here; they do not solve a position, and
+              the browser build leaves most of them out.  <code>--distinguishall</code>
+              does not work either, because the Explorer does not track the
+              orientation of centers that the puzzle itself does not show.</p>
+          </div>
+        </dialog>
         <dialog id="twsearch-export-dialog">
           <h2>Run this search with twsearch</h2>
           <p>This file holds the puzzle and the position to solve.  Save it, then run:</p>

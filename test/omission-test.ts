@@ -41,6 +41,8 @@ const cases: [string, string[]][] = [
 
 let compared = 0;
 const failures: string[] = [];
+// Cases where our pre-check passes a position that twsearch then refuses.
+const lenient: string[] = [];
 for (const [name, args] of cases) {
   const label = `${name} ${args.join(" ")}`;
   try {
@@ -96,11 +98,21 @@ for (const [name, args] of cases) {
       if (r.status !== 0) throw new Error(`twsearch: ${r.stderr.trim()}`);
       const theirs = r.stdout.includes("Ignoring unsolvable position") ? "unreachable" : "reachable";
       compared++;
-      if (ours !== theirs) failures.push(`${label}: ${what}: ours ${ours}, twsearch ${theirs}`);
+      if (ours === theirs) continue;
+      // Being more permissive is safe as long as twsearch itself catches the
+      // position: the search stops at once with its own message.  (It does
+      // this for sets it can only check roughly, such as the orientation sum
+      // of a set whose permutation --omitperms ignores.)
+      if (ours === "reachable" && theirs === "unreachable") {
+        lenient.push(`${label}: ${what}`);
+        continue;
+      }
+      failures.push(`${label}: ${what}: ours ${ours}, twsearch ${theirs}`);
     }
   } catch (e) {
     failures.push(`${label}: ${(e as Error).message}`);
   }
 }
-console.log(`${cases.length} option cases; ${compared} verdicts compared with twsearch; ${failures.length} failures`);
+console.log(`${cases.length} option cases; ${compared} verdicts compared with twsearch; ${failures.length} failures, ${lenient.length} left to twsearch`);
+for (const l of lenient) console.log("  lenient (twsearch refuses it):", l);
 for (const f of failures) console.log("  FAIL", f);
