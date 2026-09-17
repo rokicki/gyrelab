@@ -289,10 +289,21 @@ export function colorsToPattern(
     }
     if (problems.length > 0) continue;
 
-    // Keep only (piece, twist) pairs the piece can reach at that location.
+    // Keep only (piece, twist) pairs the piece can reach at that location,
+    // and try a piece's own home first, so that pieces that look alike are
+    // left where they belong instead of being shuffled among themselves.
+    // (--distinguishall then solves the least disturbed position that shows
+    // these colors.)
     const orbitReach = reach?.get(orbit.name);
     const allowed = fits.map((f, loc) =>
-      orbitReach ? f.filter(({ piece, twist }) => orbitReach[piece].has(loc * m + twist)) : f,
+      (orbitReach ? f.filter(({ piece, twist }) => orbitReach[piece].has(loc * m + twist)) : f)
+        .slice()
+        .sort(
+          (a, b) =>
+            Number(b.piece === loc && b.twist === 0) - Number(a.piece === loc && a.twist === 0) ||
+            a.piece - b.piece ||
+            a.twist - b.twist,
+        ),
     );
     for (let loc = 0; loc < orbit.numPieces; loc++) {
       if (allowed[loc].length === 0) {

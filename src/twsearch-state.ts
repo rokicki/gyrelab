@@ -392,6 +392,10 @@ export function patternToScrambleState(
   transformationFor: (name: string) => KTransformation = (name) =>
     pattern.kpuzzle.algToTransformation(name),
   omission: SetOmission = () => 0,
+  // --distinguishall: twsearch replaces the solved state with the identity,
+  // so the position must name each piece by the place it belongs rather than
+  // by the piece label (its color class) the solved state gives it.
+  distinguishAll = false,
 ): string {
   const tw = parseKsolve(twsearchKsolve);
   const moves = [...tw.moves.keys()].filter((m) => !isRotationName(m));
@@ -426,7 +430,13 @@ export function patternToScrambleState(
           `A ${at.set} piece is somewhere twsearch's puzzle can't move it`,
         );
       }
-      pieces.push(omitPerm ? 0 : tw.solved.get(set.name)!.perm[home.index]);
+      pieces.push(
+        omitPerm
+          ? 0
+          : distinguishAll
+            ? home.index
+            : tw.solved.get(set.name)!.perm[home.index],
+      );
       oris.push(orbit.orientation[at.index] % set.mod);
     }
     // Pieces no move moves must be at home, or the position can never be
@@ -438,7 +448,9 @@ export function patternToScrambleState(
           orbitOf(tw, m, set).perm[index] === index &&
           orbitOf(tw, m, set).ori[index] === 0,
       );
-      const solvedValue = tw.solved.get(set.name)!.perm[index];
+      const solvedValue = distinguishAll
+        ? index
+        : tw.solved.get(set.name)!.perm[index];
       const pieceWrong = !(ignore & 1) && pieces[index] !== solvedValue;
       const twistWrong = !(ignore & 2) && oris[index] !== 0;
       if (unmoved && (pieceWrong || twistWrong)) {

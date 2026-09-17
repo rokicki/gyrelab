@@ -235,7 +235,11 @@ export class TwsearchSolvePanel {
     // Options that tell twsearch to ignore sets (--nocorners, --omit, ...)
     // apply to these checks too.
     const { checker, moveSet, tws } = await puzzleChecks(this.app, args);
-    const reach = checker.check(pattern);
+    // With --distinguishall every piece is distinct, so twsearch's own
+    // --checkbeforesolve decides exactly; our check, which can only look at
+    // the orbits the display tells apart, would be guessing.
+    const distinguishAll = args.includes("--distinguishall");
+    const reach = distinguishAll ? "reachable" : checker.check(pattern);
     if (reach === "rotated") {
       throw new TwsearchStateError(
         moveSet.length > 0
@@ -257,6 +261,7 @@ export class TwsearchSolvePanel {
         tws,
         undefined,
         setOmissionFromArgs(args),
+        distinguishAll,
       ),
     };
   }

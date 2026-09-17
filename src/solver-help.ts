@@ -35,6 +35,7 @@ export const HELP_OPTIONS: HelpOption[] = [
   { option: "--omitperms <set>", flags: ["--omitperms"], text: "For this set, solve the orientations but not which piece is where." },
   { option: "--omitoris <set>", flags: ["--omitoris"], text: "For this set, solve the permutation but not the orientations." },
   { option: "--noorientation", flags: ["--noorientation"], text: "Ignore orientation everywhere." },
+  { option: "--distinguishall", flags: ["--distinguishall"], text: "Tell apart pieces that look alike (the superpuzzle), for finding pure algorithms: a cycle of same-color centers, say, which the puzzle itself cannot show.  A position from the alg is used exactly; a painted position leaves look-alike pieces at home wherever it can, since the colors cannot say which is which." },
   { option: "--orientationgroup <n>", flags: ["--orientationgroup"], text: "Treat groups of n adjacent pieces as interchangeable." },
   { option: "--writeprunetables always", flags: ["--writeprunetables"], text: "Keep pruning tables on disk between searches (native only; the bridge does not keep them otherwise).  never, auto, or always." },
   { option: "-v2", flags: ["-v2"], text: "More output while searching; -v3 for more again, --quiet for less." },
