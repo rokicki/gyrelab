@@ -1,5 +1,5 @@
 import { Alg } from "cubing/alg";
-import { getPuzzleGeometryByDesc } from "cubing/puzzle-geometry";
+import { puzzleChecks } from "./reachability";
 import type { TwizzleExplorerApp } from "./app";
 import {
   BridgeChannel,
@@ -8,7 +8,12 @@ import {
   type TwsearchEvent,
   WasmChannel,
 } from "./twsearch-channel";
-import { algToScrambleAlg, TwsearchInputError } from "./twsearch-input";
+import { getMoveSetText, moveSetEvents, setMoveSetText } from "./move-set";
+import {
+  patternToScrambleState,
+  setOmissionFromArgs,
+  TwsearchStateError,
+} from "./twsearch-state";
 
 // Default pruning table memory for WebAssembly, in MB, when the options do
 // not give -M.  (The bridge applies its own cap.)
@@ -16,6 +21,29 @@ const WASM_DEFAULT_MEGABYTES = 512;
 // How long to wait for "Search canceled" before offering to abandon a
 // pruning table fill.
 const CANCEL_GRACE_MS = 750;
+
+// Exported searches are numbered so that no two files saved from this
+// browser have the same name; twsearch takes a puzzle's name from the part
+// before the first dot, so "4x4x4.3.tws" and "4x4x4.7.tws" still share
+// pruning tables.  The count is kept in localStorage so that it survives a
+// reload and is shared by every tab; it is the only thing the Explorer
+// stores there.
+const EXPORT_SEQUENCE_KEY = "twsearch-export-sequence";
+
+function nextExportSequence(): number {
+  let next = 1;
+  try {
+    next = (Number(localStorage.getItem(EXPORT_SEQUENCE_KEY)) || 0) + 1;
+    localStorage.setItem(EXPORT_SEQUENCE_KEY, String(next));
+  } catch {
+    // Storage can be unavailable (private windows, blocked site data); the
+    // name is then only unique within this page.
+    next = ++fallbackSequence;
+  }
+  return next;
+}
+
+let fallbackSequence = 0;
 
 const END_OF_SOLVE =
   /^(Found \d+ solutions? |No solution found in |Ignoring unsolvable position\.|Search canceled at depth )/;
@@ -30,9 +58,15 @@ export class TwsearchSolvePanel {
   cancelButton = element<HTMLButtonElement>("twsearch-cancel-button");
   channelSelect = element<HTMLSelectElement>("twsearch-channel");
   argsInput = element<HTMLInputElement>("twsearch-args");
+  movesInput = element<HTMLInputElement>("twsearch-moves");
   statusElem = element<HTMLDivElement>("twsearch-status");
   solutionsElem = element<HTMLOListElement>("twsearch-solutions");
   logElem = element<HTMLPreElement>("twsearch-log");
+  exportButton = element<HTMLButtonElement>("twsearch-export-button");
+  exportDialog = element<HTMLDialogElement>("twsearch-export-dialog");
+  exportText = element<HTMLTextAreaElement>("twsearch-export-text");
+  exportCommand = element<HTMLPreElement>("twsearch-export-command");
+  exportNote = element<HTMLSpanElement>("twsearch-export-note");
 
   bridge = new BridgeChannel();
   wasm: WasmChannel;
@@ -41,11 +75,114 @@ export class TwsearchSolvePanel {
 
   constructor(
     private app: TwizzleExplorerApp,
-    workerURL: URL,
+    createWorker: () => Worker,
   ) {
-    this.wasm = new WasmChannel(workerURL);
+    this.wasm = new WasmChannel(createWorker);
     this.solveButton.addEventListener("click", () => void this.solve());
+    // The move set, per puzzle, for the session.
+    this.movesInput.addEventListener("input", () => {
+      setMoveSetText(this.app.configUI.descInput.value, this.movesInput.value);
+    });
+    app.twistyPlayer.experimentalModel.puzzleLoader.addFreshListener(() => {
+      this.movesInput.value = getMoveSetText(this.app.configUI.descInput.value);
+    });
+    moveSetEvents.addEventListener("change", () => {
+      const text = getMoveSetText(this.app.configUI.descInput.value);
+      if (this.movesInput.value !== text && document.activeElement !== this.movesInput) {
+        this.movesInput.value = text;
+      }
+    });
     this.cancelButton.addEventListener("click", () => this.cancel());
+    this.exportButton.addEventListener("click", () => void this.showExport());
+    element<HTMLButtonElement>("twsearch-export-close").addEventListener(
+      "click",
+      () => this.exportDialog.close(),
+    );
+    element<HTMLButtonElement>("twsearch-export-copy").addEventListener(
+      "click",
+      () => void this.copyExport(),
+    );
+    element<HTMLButtonElement>("twsearch-export-download").addEventListener(
+      "click",
+      () => this.downloadExport(),
+    );
+  }
+
+  /** The twsearch options for a search, as solve() would run it. */
+  searchArgs(): string[] {
+    const args = this.argsInput.value.trim().split(/\s+/).filter(Boolean);
+    if (!args.includes("--checkbeforesolve")) {
+      args.push("--checkbeforesolve");
+    }
+    return args;
+  }
+
+  /** The file name shown in the popup, set when it opens. */
+  exportName = "puzzle.tws";
+
+  /** A fresh file name for an exported search, from the puzzle's name. */
+  nextExportFileName(): string {
+    const name =
+      this.app.configUI.puzzleNameSelect.value ||
+      this.app.configUI.descInput.value;
+    const base =
+      name.trim().replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "") ||
+      "puzzle";
+    return `${base}.${nextExportSequence()}.tws`;
+  }
+
+  /**
+   * Show the file for the current search: the puzzle definition with the
+   * position to solve at the end of it, which twsearch reads on its own,
+   * and the command line that runs the same search natively.
+   */
+  async showExport(): Promise<void> {
+    const args = this.searchArgs();
+    this.exportNote.textContent = "";
+    let input: { tws: string; scramble: string };
+    try {
+      input = await this.input(args);
+    } catch (e) {
+      this.setStatus(
+        e instanceof TwsearchStateError ? e.message : `Error: ${e}`,
+      );
+      return;
+    }
+    this.exportName = this.nextExportFileName();
+    const command = `twsearch ${[...args, this.exportName].join(" ")}`;
+    // The command goes in the file as a comment; comments do not change the
+    // puzzle's checksum, so the file still shares the puzzle's pruning
+    // tables.
+    const file = `# ${command}\n${input.tws.replace(/\n*$/, "")}\n\n${input.scramble.replace(/\n*$/, "")}\n`;
+    this.exportText.value = file;
+    this.exportCommand.textContent = command;
+    this.exportDialog.showModal();
+  }
+
+  async copyExport(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(this.exportText.value);
+      this.exportNote.textContent = "Copied.";
+    } catch {
+      // Clipboard access is refused in some contexts (including file://).
+      this.exportText.focus();
+      this.exportText.select();
+      this.exportNote.textContent = document.execCommand("copy")
+        ? "Copied."
+        : "Press Ctrl-C (Command-C) to copy the selected text.";
+    }
+  }
+
+  downloadExport(): void {
+    const url = URL.createObjectURL(
+      new Blob([this.exportText.value], { type: "text/plain" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = this.exportName;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    this.exportNote.textContent = `Saved ${this.exportName}.`;
   }
 
   setStatus(text: string): void {
@@ -63,31 +200,54 @@ export class TwsearchSolvePanel {
     }
   }
 
-  /** The twsearch input for the position at the end of the alg. */
-  async input(): Promise<{ tws: string; scramble: string }> {
+  /**
+   * The twsearch input for the position at the end of the alg (including a
+   * setup from the Scramble button or a setup alg).  The displayed state is
+   * mapped onto twsearch's puzzle (see twsearch-state.ts).
+   */
+  async input(args: string[]): Promise<{ tws: string; scramble: string }> {
     const model = this.app.twistyPlayer.experimentalModel;
-    if (await model.setupTransformation.get()) {
-      throw new TwsearchInputError(
-        "Positions from the Scramble button can't be solved yet; enter the scramble as an alg.",
+    const [start, algWithIssues] = await Promise.all([
+      model.anchorTransformation.get(),
+      model.puzzleAlg.get(),
+    ]);
+    if (algWithIssues.issues.errors.length > 0) {
+      throw new TwsearchStateError(
+        `The alg has errors: ${algWithIssues.issues.errors.join("; ")}`,
       );
     }
-    if ((await model.setupAnchor.get()) !== "start") {
-      throw new TwsearchInputError(
-        "Only setups anchored at the start are supported.",
+    const pattern = start.applyAlg(algWithIssues.alg).toKPattern();
+    // Refuse positions the moves can't reach before starting a search that
+    // would never end.  (twsearch's own --checkbeforesolve can't check
+    // puzzles with identical pieces.)  This covers the orbits whose pieces
+    // are all distinguishable.
+    // Options that tell twsearch to ignore sets (--nocorners, --omit, ...)
+    // apply to these checks too.
+    const { checker, moveSet, tws } = await puzzleChecks(this.app, args);
+    const reach = checker.check(pattern);
+    if (reach === "rotated") {
+      throw new TwsearchStateError(
+        moveSet.length > 0
+          ? `This position can't be reached with the move set ${moveSet.join(",")}, only with the whole puzzle rotated as well (not supported yet).`
+          : "This position is rotated relative to the solved puzzle, which the puzzle's moves can't undo (from a rotation or slice move in the alg, or from the Scramble button, which currently scrambles with rotations too).",
       );
     }
-    const alg = (await model.setupAlg.get()).alg.concat(
-      (await model.alg.get()).alg,
-    );
-    // The default ksolve file (as from the base PuzzleGeometry) plus the
-    // puzzle's rotations (PG's --rotations), which twsearch uses for
-    // symmetry.  twsearch refuses rotations in the alg itself.
-    const tws = getPuzzleGeometryByDesc(this.app.configUI.descInput.value, {
-      allMoves: false,
-      orientCenters: false,
-      addRotations: true,
-    }).writeksolve("TwizzlePuzzle");
-    return { tws, scramble: algToScrambleAlg(alg) };
+    if (reach === "unreachable") {
+      throw new TwsearchStateError(
+        moveSet.length > 0
+          ? `This position can't be reached with the move set ${moveSet.join(",")}.`
+          : "This position can't be reached with the puzzle's moves.",
+      );
+    }
+    return {
+      tws,
+      scramble: patternToScrambleState(
+        pattern,
+        tws,
+        undefined,
+        setOmissionFromArgs(args),
+      ),
+    };
   }
 
   async solve(): Promise<void> {
@@ -96,17 +256,17 @@ export class TwsearchSolvePanel {
     }
     this.solutionsElem.textContent = "";
     this.logElem.textContent = "";
+    const args = this.searchArgs();
     let input: { tws: string; scramble: string };
     try {
-      input = await this.input();
+      input = await this.input(args);
     } catch (e) {
       this.setStatus(
-        e instanceof TwsearchInputError ? e.message : `Error: ${e}`,
+        e instanceof TwsearchStateError ? e.message : `Error: ${e}`,
       );
       return;
     }
     const channel = await this.chooseChannel();
-    const args = this.argsInput.value.trim().split(/\s+/).filter(Boolean);
     if (channel === this.wasm && !args.includes("-M")) {
       args.push("-M", String(WASM_DEFAULT_MEGABYTES));
     }
@@ -141,7 +301,12 @@ export class TwsearchSolvePanel {
         searching = true;
         phase = "Searching";
       } else if (line.startsWith(" ")) {
-        this.addSolution(line.trim());
+        // twsearch prints ksolve move names, which the Explorer's puzzle
+        // uses too (both come from PuzzleGeometry's notation mapper).
+        this.addSolution(Alg.fromString(line.trim()));
+      } else if (line.startsWith("Ignoring unsolvable position")) {
+        final =
+          "This position can't be reached with the puzzle's moves (perhaps it is rotated relative to the solved puzzle).";
       } else if (END_OF_SOLVE.test(line)) {
         final = line;
       }
@@ -179,16 +344,15 @@ export class TwsearchSolvePanel {
     }
   }
 
-  addSolution(solution: string): void {
+  addSolution(solution: Alg): void {
     const item = document.createElement("li");
     const button = document.createElement("button");
-    button.textContent = solution === "" ? "(already solved)" : solution;
+    button.textContent =
+      solution.toString() === "" ? "(already solved)" : solution.toString();
     button.title = "Append to the alg";
     button.addEventListener("click", async () => {
       const model = this.app.twistyPlayer.experimentalModel;
-      this.app.twistyPlayer.alg = (await model.alg.get()).alg.concat(
-        Alg.fromString(solution),
-      );
+      this.app.twistyPlayer.alg = (await model.alg.get()).alg.concat(solution);
       this.app.twistyPlayer.jumpToEnd();
       this.solutionsElem.textContent = "";
     });

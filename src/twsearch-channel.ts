@@ -102,11 +102,11 @@ export class WasmChannel implements TwsearchChannel {
   #worker: Worker | null = null;
   #handlers = new Map<string, (e: TwsearchEvent) => void>();
 
-  constructor(private workerURL: URL) {}
+  constructor(private createWorker: () => Worker) {}
 
   #getWorker(): Worker {
     if (!this.#worker) {
-      const worker = new Worker(this.workerURL, { type: "module" });
+      const worker = this.createWorker();
       worker.addEventListener(
         "message",
         (e: MessageEvent<{ id: string; event: TwsearchEvent }>) =>

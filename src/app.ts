@@ -12,6 +12,7 @@ import {
 import type { PuzzleLoader } from "cubing/puzzles";
 import type { TwistyAlgEditor, TwistyPlayer } from "cubing/twisty";
 import { constructMoveCountDisplay } from "./move-count";
+import { ColorPainter } from "./color-painter";
 import { TwsearchSolvePanel } from "./solve-panel";
 import { constructTwistyPlayer } from "./twisty-player";
 import "./TwistyPuzzleDescriptionInput";
@@ -23,7 +24,8 @@ export class TwizzleExplorerApp {
   configUI: ConfigUI;
   dialog: Dialog;
   solvePanel: TwsearchSolvePanel;
-  constructor(twsearchWorkerURL: URL) {
+  colorPainter: ColorPainter;
+  constructor(createTwsearchWorker: () => Worker) {
     this.twistyPlayer = constructTwistyPlayer();
     this.twistyPlayer.experimentalSetFlashLevel("none");
     document.querySelector("#twisty-wrapper")?.appendChild(this.twistyPlayer);
@@ -41,7 +43,20 @@ export class TwizzleExplorerApp {
     );
 
     this.dialog = new Dialog();
-    this.solvePanel = new TwsearchSolvePanel(this, twsearchWorkerURL);
+    this.solvePanel = new TwsearchSolvePanel(this, createTwsearchWorker);
+    this.colorPainter = new ColorPainter(this);
+    // While the Solve or Colors tab is shown, clicking the puzzle must not
+    // make moves (that would change the position being worked on).  Dragging
+    // to turn the view still works.  The Colors tab replaces the 3D puzzle
+    // with its net.
+    document.querySelector("side-panel")!.addEventListener("tab-change", ((
+      e: CustomEvent<{ id: string }>,
+    ) => {
+      const id = e.detail.id;
+      this.twistyPlayer.experimentalMovePressInput =
+        id === "twsearch-solve" || id === "color-picker" ? "none" : "basic";
+      void this.colorPainter.setActive(id === "color-picker");
+    }) as EventListener);
 
     const twistyPuzzleDescriptionInput = document.querySelector(
       "twisty-puzzle-description-input",
@@ -323,6 +338,7 @@ class SidePanel extends HTMLElement {
       child.hidden = true;
     }
     document.getElementById(id)!.hidden = false;
+    this.dispatchEvent(new CustomEvent("tab-change", { detail: { id } }));
   }
 }
 customElements.define("side-panel", SidePanel);

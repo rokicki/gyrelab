@@ -226,3 +226,101 @@ twisty-puzzle-description-input button.add {
   max-height: 40vh;
   overflow-y: auto;
 }
+
+#color-net {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+  background: #f4f4f4;
+}
+
+#color-net[hidden] {
+  display: none;
+}
+
+#color-net polygon.sticker {
+  cursor: crosshair;
+}
+
+#color-net polygon.problem {
+  stroke: #e00000;
+  stroke-width: 3px;
+}
+
+#color-picker {
+  padding: 1em;
+  border-left: rgba(0, 0, 0, 0.25) solid;
+  align-content: start;
+  gap: 0.5em;
+}
+
+#color-picker p {
+  margin: 0;
+}
+
+#color-palette {
+  display: grid;
+  justify-content: start;
+  gap: 0.4em;
+  /* room for the selected swatch's outline */
+  padding: 5px;
+}
+
+#color-palette .swatch {
+  width: 3em;
+  height: 3em;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 0.25em;
+}
+
+#color-palette .swatch.selected {
+  outline: 3px solid #000;
+  outline-offset: 1px;
+}
+
+#color-problems {
+  margin: 0;
+  padding-left: 1.2em;
+  color: #a00000;
+}
+
+#twsearch-export-dialog {
+  width: min(48em, 90vw);
+  max-height: 85vh;
+  border: 1px solid #999;
+  border-radius: 4px;
+  padding: 1em;
+}
+
+#twsearch-export-dialog h2 {
+  font-size: 1.1em;
+  margin: 0 0 0.5em;
+}
+
+#twsearch-export-dialog p {
+  margin: 0 0 0.5em;
+}
+
+#twsearch-export-command {
+  background: #eee;
+  padding: 0.5em;
+  margin: 0 0 0.5em;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+#twsearch-export-text {
+  width: 100%;
+  box-sizing: border-box;
+  height: 45vh;
+  margin-top: 0.5em;
+  font-family: monospace;
+  font-size: 0.85em;
+  white-space: pre;
+}
+
+#twsearch-export-note {
+  font-size: 0.9em;
+  color: #060;
+}

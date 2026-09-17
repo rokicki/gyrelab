@@ -18,10 +18,16 @@ async function open(puzzle, alg) {
   await page.waitForSelector("twisty-player");
 }
 
-async function solve(label, { puzzle = "3x3x3", alg, channel, cancelAfter }) {
+async function solve(label, { puzzle = "3x3x3", alg, channel, cancelAfter, scramble }) {
   await open(puzzle, alg);
+  if (scramble) {
+    await page.waitForTimeout(500);
+    await page.click("#scramble");
+    await page.waitForTimeout(500);
+  }
   await page.click('button[data-tab-id="twsearch-solve"]');
   await page.selectOption("#twsearch-channel", channel);
+  await page.evaluate(() => { document.querySelector("#twsearch-status").textContent = ""; });
   await page.click("#twsearch-solve-button");
   if (cancelAfter) {
     await page.waitForTimeout(cancelAfter);
@@ -58,7 +64,44 @@ if (mode === "screenshot") {
     console.log(ts(), "URL alg after applying:", new URL(page.url()).searchParams.get("alg"));
   }
   await solve("wasm megaminx", { puzzle: "megaminx", alg: "R U2 F' BL", channel: "wasm" });
-  await solve("wasm rotation", { alg: "R U x", channel: "wasm" });
+  await solve("wasm rotation", { alg: "R U Lv", channel: "wasm" });
+  await solve("wasm slice", { alg: "R 2L", channel: "wasm" });
+  // Clicking the puzzle while the Solve tab is shown must not make a move.
+  await open("3x3x3", "R U");
+  await page.click('button[data-tab-id="twsearch-solve"]');
+  const box = await page.locator("twisty-player").boundingBox();
+  await page.mouse.click(box.x + box.width * 0.25, box.y + box.height * 0.4);
+  await page.waitForTimeout(700);
+  const afterSolveTabClick = new URL(page.url()).searchParams.get("alg");
+  await page.click('button[data-tab-id="editor"]');
+  await page.mouse.click(box.x + box.width * 0.25, box.y + box.height * 0.4);
+  await page.waitForTimeout(700);
+  console.log(ts(), "alg after clicking the puzzle: Solve tab ->", JSON.stringify(afterSolveTabClick), "; Edit Alg tab ->", JSON.stringify(new URL(page.url()).searchParams.get("alg")));
+  for (let trial = 0; trial < 3; trial++) for (const puzzle of ["2x2x2", "skewb", "pyraminx", "dino", "megaminx"]) {
+    if (puzzle === "megaminx" && trial > 0) continue;
+    const found = await solve(`wasm ${puzzle} Scramble button`, { puzzle, alg: "", channel: "wasm", scramble: true });
+    if (found.length) {
+      await page.click("#twsearch-solutions button");
+      await page.waitForTimeout(500);
+      const solved = await page.evaluate(async () => {
+        const model = globalThis.app.twistyPlayer.experimentalModel;
+        const [start, alg, kpuzzle] = await Promise.all([model.anchorTransformation.get(), model.puzzleAlg.get(), model.kpuzzle.get()]);
+        const end = start.applyAlg(alg.alg).toKPattern();
+        if (end.isIdentical(kpuzzle.defaultPattern())) return true;
+        // Report what differs from solved.
+        const diffs = [];
+        for (const [orbit, data] of Object.entries(end.patternData)) {
+          const solved = kpuzzle.defaultPattern().patternData[orbit];
+          if (JSON.stringify(data.pieces) !== JSON.stringify(solved.pieces)) diffs.push(`${orbit} positions`);
+          else if (JSON.stringify(data.orientation) !== JSON.stringify(solved.orientation)) diffs.push(`${orbit} orientation only`);
+        }
+        // Center orientation is display-only (twsearch ignores it).
+        if (diffs.every((d) => d === "CENTERS orientation only")) return "true (except display-only center orientation)";
+        return `not identical: ${diffs.join(", ")}`;
+      });
+      console.log(ts(), `${puzzle}: solved after applying the solution:`, solved);
+    }
+  }
   await solve("wasm grouping", { alg: "[R, U] (F2 D)2", channel: "wasm" });
   await solve("wasm cancel", { alg: "U R2 F B R B2 R U2 L B2 R U' D' R2 F R' L B2 U2 F2", channel: "wasm", cancelAfter: 5000 });
 } else if (mode === "bridge") {

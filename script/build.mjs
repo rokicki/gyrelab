@@ -1,35 +1,95 @@
-// Builds the Explorer into dist/.  With --serve, rebuilds on change and
-// serves dist/ at http://localhost:3334/.
-import { cpSync, mkdirSync } from "node:fs";
+// Builds the Explorer.
+//
+//    node script/build.mjs              dev build into dist/
+//    node script/build.mjs --serve      dev build, rebuilt on change, served
+//                                       at http://localhost:3334/
+//    node script/build.mjs --site DIR   static site into DIR
+//
+// The static site works from any web server and also opened directly from
+// the filesystem (file://).  Browsers refuse module scripts and worker
+// scripts from file:// URLs, so the site build uses one classic script, with
+// the twsearch worker's code embedded in it and started from a Blob URL.
+import { cpSync, mkdirSync, readFileSync, rmSync, watch, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import * as esbuild from "esbuild";
 
-const serve = process.argv.includes("--serve");
 const src = new URL("../src/", import.meta.url).pathname;
-const dist = new URL("../dist/", import.meta.url).pathname;
+const assets = ["help.html", "favicon.ico", "app-icon.png"];
+const siteIndex = process.argv.indexOf("--site");
 
-mkdirSync(dist, { recursive: true });
-for (const file of ["index.html", "help.html", "favicon.ico", "app-icon.png"]) {
-  cpSync(src + file, dist + file);
-}
-
-const options = {
-  entryPoints: [src + "main.ts", src + "twsearch-worker.ts", src + "index.css"],
-  outdir: dist,
-  bundle: true,
-  splitting: true,
-  format: "esm",
-  target: "es2022",
-  chunkNames: "chunks/[name]-[hash]",
-  sourcemap: true,
-  loader: { ".woff": "file", ".woff2": "file" },
-  logLevel: "info",
-};
-
-if (serve) {
-  const context = await esbuild.context(options);
-  await context.watch();
-  const { port } = await context.serve({ servedir: dist, port: 3334 });
-  console.log(`Explorer: http://localhost:${port}/`);
+if (siteIndex >= 0) {
+  const out = resolve(process.argv[siteIndex + 1] ?? "site");
+  rmSync(out, { recursive: true, force: true });
+  mkdirSync(out, { recursive: true });
+  // The worker, as a classic script to embed.
+  const worker = await esbuild.build({
+    entryPoints: [src + "twsearch-worker.ts"],
+    bundle: true,
+    format: "iife",
+    target: "es2022",
+    minify: true,
+    write: false,
+    define: { "import.meta.url": "self.location.href" },
+    logLevel: "warning",
+  });
+  await esbuild.build({
+    entryPoints: [src + "main.ts", src + "index.css"],
+    outdir: out,
+    bundle: true,
+    format: "iife",
+    target: "es2022",
+    minify: true,
+    define: {
+      TWSEARCH_WORKER_SOURCE: JSON.stringify(worker.outputFiles[0].text),
+      "import.meta.url": "document.baseURI",
+    },
+    loader: { ".woff": "file", ".woff2": "file" },
+    assetNames: "assets/[name]-[hash]",
+    logLevel: "warning",
+  });
+  for (const file of assets) cpSync(src + file, `${out}/${file}`);
+  // A classic, deferred script instead of a module.
+  const html = readFileSync(src + "index.html", "utf8").replace(
+    /<script src="\.\/main\.js"[^>]*><\/script>/,
+    '<script src="./main.js" defer></script>',
+  );
+  writeFileSync(`${out}/index.html`, html);
+  console.log(`Static site in ${out}`);
 } else {
-  await esbuild.build(options);
+  const dist = new URL("../dist/", import.meta.url).pathname;
+  mkdirSync(dist, { recursive: true });
+  // esbuild doesn't watch these, so copy them on every (re)build.
+  const copyStatic = {
+    name: "copy-static",
+    setup(build) {
+      build.onStart(() => {
+        for (const file of ["index.html", ...assets]) cpSync(src + file, dist + file);
+      });
+    },
+  };
+  const options = {
+    plugins: [copyStatic],
+    entryPoints: [src + "main.ts", src + "twsearch-worker.ts", src + "index.css"],
+    outdir: dist,
+    bundle: true,
+    splitting: true,
+    format: "esm",
+    target: "es2022",
+    chunkNames: "chunks/[name]-[hash]",
+    sourcemap: true,
+    loader: { ".woff": "file", ".woff2": "file" },
+    logLevel: "info",
+  };
+  if (process.argv.includes("--serve")) {
+    const context = await esbuild.context(options);
+    await context.watch();
+    // An edit to only the HTML triggers no esbuild rebuild; copy it directly.
+    for (const file of ["index.html", ...assets]) {
+      watch(src + file, () => cpSync(src + file, dist + file));
+    }
+    const { port } = await context.serve({ servedir: dist, port: 3334 });
+    console.log(`Explorer: http://localhost:${port}/`);
+  } else {
+    await esbuild.build(options);
+  }
 }

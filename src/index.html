@@ -73,11 +73,14 @@
       <span id="move-count"></span>
     </div>
   </div>
-  <div id="twisty-wrapper"></div>
+  <div id="twisty-wrapper">
+    <div id="color-net" hidden></div>
+  </div>
   <side-panel>
     <panel-selector>
       <button data-tab-id="editor">Edit Alg</button>
       <button data-tab-id="puzzle-cuts">Puzzle Cuts</button>
+      <button data-tab-id="color-picker">Colors</button>
       <button data-tab-id="twsearch-solve">Solve</button>
     </panel-selector>
     <panel-tabs>
@@ -103,18 +106,35 @@
           <button class="add inputs-go-before-here">➕ Add edge cut</button>
         </section>
       </twisty-puzzle-description-input>
+      <div id="color-picker" hidden>
+        <p>Paint stickers on the net to set a position: pick a color, then click or drag.
+          Right-click a sticker to pick up its color.  Whenever the painted position is
+          valid, it becomes the position.</p>
+        <div id="color-palette"></div>
+        <div class="twsearch-row">
+          <button id="color-from-position">From current position</button>
+          <button id="color-solved">Solved</button>
+          <button id="color-clear">Clear</button>
+        </div>
+        <div id="color-moveset"></div>
+        <div id="color-status"></div>
+        <ul id="color-problems"></ul>
+      </div>
       <div id="twsearch-solve" hidden>
         <p>Solves the position at the end of the alg with twsearch, natively through the
           twsearch bridge if it is running on this computer, otherwise in the browser.</p>
         <div class="twsearch-row">
           <button id="twsearch-solve-button">Solve</button>
           <button id="twsearch-cancel-button" disabled>Cancel</button>
+          <button id="twsearch-export-button">Export...</button>
           <select id="twsearch-channel">
             <option value="auto" selected>Auto</option>
             <option value="bridge">Native bridge</option>
             <option value="wasm">WebAssembly</option>
           </select>
         </div>
+        <label class="twsearch-row">Move set <input type="text" id="twsearch-moves"
+            placeholder="default (e.g. U,R,F or u,r,f)" /></label>
         <label class="twsearch-row">Options <input type="text" id="twsearch-args" value="-v2" /></label>
         <div id="twsearch-status"></div>
         <ol id="twsearch-solutions"></ol>
@@ -122,6 +142,18 @@
           <summary>twsearch output</summary>
           <pre id="twsearch-log"></pre>
         </details>
+        <dialog id="twsearch-export-dialog">
+          <h2>Run this search with twsearch</h2>
+          <p>This file holds the puzzle and the position to solve.  Save it, then run:</p>
+          <pre id="twsearch-export-command"></pre>
+          <div class="twsearch-row">
+            <button id="twsearch-export-copy">Copy file</button>
+            <button id="twsearch-export-download">Save file</button>
+            <button id="twsearch-export-close">Close</button>
+            <span id="twsearch-export-note"></span>
+          </div>
+          <textarea id="twsearch-export-text" readonly spellcheck="false"></textarea>
+        </dialog>
       </div>
     </panel-tabs>
   </side-panel>
