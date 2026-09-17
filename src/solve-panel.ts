@@ -244,7 +244,7 @@ export class TwsearchSolvePanel {
       throw new TwsearchStateError(
         moveSet.length > 0
           ? `This position can't be reached with the move set ${moveSet.join(",")}, only with the whole puzzle rotated as well (not supported yet).`
-          : "This position is rotated relative to the solved puzzle, which the puzzle's moves can't undo (from a rotation or slice move in the alg, or from the Scramble button, which currently scrambles with rotations too).",
+          : "This position is rotated relative to the solved puzzle, which the puzzle's moves can't undo (a rotation or a middle-slice move in the alg, or a Scramble made by a cubing.js from before scrambles kept to the puzzle's own moves).",
       );
     }
     if (reach === "unreachable") {
