@@ -17,7 +17,7 @@ export const HELP_OPTIONS: HelpOption[] = [
   { option: "--alloptimal", flags: ["--alloptimal"], text: "Every solution of the shortest length." },
   { option: "--mindepth <n>", flags: ["--mindepth"], text: "Start searching at depth n." },
   { option: "--maxdepth <n>", flags: ["--maxdepth"], text: "Give up past depth n, instead of searching on." },
-  { option: "-M <mb>", flags: ["-M"], text: "Memory for the pruning table, in megabytes.  More memory usually means a much faster search.  The browser uses 512 unless you say otherwise; the bridge caps this at its own limit." },
+  { option: "-M <mb>", flags: ["-M"], text: "Memory for the pruning table, in megabytes.  More memory usually means a much faster search.  The browser uses 1024 unless you say otherwise; the bridge caps this at its own limit." },
   { option: "-t <n>", flags: ["-t"], text: "Threads to search with (the native bridge only; the browser build is single-threaded and ignores it)." },
   { option: "--microthreads <n>", flags: ["--microthreads"], text: "Microthreads per thread, which hides memory latency." },
   { option: "-q", flags: ["-q"], text: "Quarter turns only: count and use only the puzzle's smallest turns." },

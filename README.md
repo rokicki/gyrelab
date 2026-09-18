@@ -6,6 +6,9 @@ with Colors and Solver tabs.  Solves with twsearch in the browser
 (WebAssembly), or, for deeper, faster searches, a native twsearch on your
 machine.
 
+You need this repository only to build or develop Gyrelab, or to run it
+offline.  Otherwise, use the [public page](https://cube20.org/gyrelab/).
+
 ## Building and developing
 
 You need [bun](https://bun.sh).  twsearch comes along as a submodule, so
@@ -16,8 +19,8 @@ clone with it:
     bun install
     bun run dev             # http://localhost:3334/, rebuilt as you edit
 
-`bun run site` builds a static site into `site/`; it works from any web
-server or opened straight from the filesystem.  `bun run check`
+To run it offline, `bun run site`, then open `site/index.html` in a
+browser.  `site/` also works from any web server.  `bun run check`
 type-checks.
 
 The WebAssembly twsearch is prebuilt in `vendor/twsearch/`, so building

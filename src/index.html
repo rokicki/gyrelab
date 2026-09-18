@@ -147,11 +147,14 @@
           <h2>Solving with twsearch</h2>
           <div class="twsearch-row"><button id="twsearch-help-close">Close</button></div>
           <div id="twsearch-help-body">
-            <p>The Solver hands twsearch the position at the end of the alg, as a
-              state, and applies the solution you click.  A search runs either in
-              this browser (WebAssembly) or, if the bridge is running on this
-              computer, natively, which is much faster.  <b>Export...</b> gives you
-              the whole search as one file to run with your own twsearch.</p>
+            <p>The solver hands twsearch the current position to solve.  This can
+              be the position at the end of an algorithm from the algorithm
+              box, or the position set in the <b>Colors</b> tab, or the position set
+              by the <b>Scramble</b> button.  The search for an optimal solution will
+              proceed; if it completes, the solution(s) will appear as
+              button(s) you can click to apply that solution.  Some solutions to
+              certain positions on certain puzzles may appear instantly; others
+              may take a very long time, so there is a <b>Cancel</b> button.</p>
 
             <h3>Move set</h3>
             <p>Comma separated move names, as this puzzle names them:
@@ -159,20 +162,33 @@
               moves.  No spaces.  Leave it blank for the puzzle's own moves.  The
               move set decides the puzzle twsearch is given, so it also decides
               which positions count as solvable, in the Colors tab as well.  It is
-              kept per puzzle while the page is open, and is not part of the URL.</p>
+              kept per puzzle while the page is open, and is not part of the URL.
+              The move set also limits the <b>Scramble</b> button: it scrambles with
+              those moves only, so the solver can always solve the result.</p>
 
             <h3>Options</h3>
             <p>Anything below can go in the Options field, separated by spaces.
               <code>--checkbeforesolve</code> is always added, so an unsolvable
-              position is refused instead of searched for ever.</p>
+              position is refused instead of searched forever.  The most useful
+              options in general are -c, -M, -q, --distinguishall, and the various
+              options starting with --no or --omit.</p>
             <dl id="twsearch-help-options"></dl>
             <p>twsearch's other commands (<code>-g</code>, <code>--schreiersims</code>
               and the rest) are not available here; they do not solve a position, and
               the browser build leaves most of them out.</p>
 
+              <h3>The server</h3>
+              <p>By default the twsearch code is run in the browser through WebAssembly.
+              This is not as fast as a native build, and it does not use threads
+              and can only use up to 4GB of RAM.  It also cannot write pruning
+              tables to disk.  For more speed and deeper searches, you can run a
+              native server (see below) or use the <b>Export...</b> button to
+              download a file to run locally from the command line.  This file
+              contains both the puzzle definition and the puzzle state to solve.</p>
+
             <h3>Running twsearch natively</h3>
-            <p>For bigger searches (a 3x3x3 from Scramble, say), run twsearch on your
-              own machine.  The Solver finds it automatically and shows
+            <p>For bigger searches (such as a random 3x3x3 position), run twsearch on your
+              own machine.  The solver finds it automatically and shows
               <b>native (twsearch bridge)</b>.  Nothing leaves your machine.</p>
             <p>On a Mac, in Terminal:</p>
             <pre id="twsearch-help-mac"></pre>
@@ -181,12 +197,23 @@
             <p>Leave it running.  The first search on a puzzle builds a pruning table
               (minutes for a 3x3x3); later ones take seconds.  <code>-M 16384</code>
               gives it 16GB.  Stop it with Ctrl-C.</p>
-            <p>If the Solver still says WebAssembly, add this page's address to the
+            <p>If the <b>Solver</b> pane still says WebAssembly, add this page's address to the
               command:</p>
             <pre id="twsearch-help-bridge-origin"></pre>
             <p>On Linux, or to build it yourself: <code>git clone
               https://github.com/rokicki/twsearch</code>, then <code>make build</code>
               (needs a C++ compiler).</p>
+            <p>The -M option is important, as is the --writeprunetables option; you can
+              give both of these either to a command line twsearch to run an exported puzzle
+              or to the server twsearch.  The memory size provided to the -M option should be
+              less than the physical memory of your machine (in megabytes) to allow memory
+              for the operating system or other applications; choosing half the physical memory
+              is a good value to start with.  If you write pruning tables, note that every
+              different move set or puzzle writes a distinct pruning table and these can fill
+              up your disk if you don't have much space.  The twsearch log on the <b>Solver</b> pane
+              will tell you precisely where these files are stored if you should need to clean
+              them up.
+            </p>
           </div>
         </dialog>
         <dialog id="twsearch-export-dialog">

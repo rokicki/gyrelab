@@ -23,7 +23,7 @@ import {
 
 // Default pruning table memory for WebAssembly, in MB, when the options do
 // not give -M.  (The bridge applies its own cap.)
-const WASM_DEFAULT_MEGABYTES = 512;
+const WASM_DEFAULT_MEGABYTES = 1024;
 // How long to wait for "Search canceled" before offering to abandon a
 // pruning table fill.
 const CANCEL_GRACE_MS = 750;
