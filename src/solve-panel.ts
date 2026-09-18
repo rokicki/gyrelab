@@ -9,7 +9,11 @@ import {
   WasmChannel,
 } from "./twsearch-channel";
 import { getMoveSetText, moveSetEvents, setMoveSetText } from "./move-set";
-import { renderHelpOptions } from "./solver-help";
+import {
+  bridgeCommands,
+  bridgeOriginCommand,
+  renderHelpOptions,
+} from "./solver-help";
 import {
   patternToScrambleState,
   setOmissionFromArgs,
@@ -97,6 +101,10 @@ export class TwsearchSolvePanel {
     this.exportButton.addEventListener("click", () => void this.showExport());
     const helpDialog = element<HTMLDialogElement>("twsearch-help-dialog");
     renderHelpOptions(element("twsearch-help-options"));
+    element("twsearch-help-bridge-commands").textContent = bridgeCommands();
+    element("twsearch-help-bridge-origin").textContent = bridgeOriginCommand(
+      globalThis.location.origin,
+    );
     element<HTMLButtonElement>("twsearch-help-button").addEventListener(
       "click",
       () => helpDialog.showModal(),

@@ -71,6 +71,9 @@ if (siteIndex >= 0) {
     logLevel: "warning",
   });
   for (const file of assets) cpSync(src + file, `${out}/${file}`);
+  // Apache settings for serving the site (compression, caching); harmless
+  // and ignored elsewhere.  See the file itself.
+  cpSync(`${src}site.htaccess`, `${out}/.htaccess`);
   // A classic, deferred script instead of a module.
   const html = readFileSync(src + "index.html", "utf8").replace(
     /<script src="\.\/main\.js"[^>]*><\/script>/,

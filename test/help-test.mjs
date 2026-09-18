@@ -34,6 +34,16 @@ check(/comma separated/i.test(body), "says the move set is comma separated");
 check(/blank/i.test(body), "says blank means the puzzle's own moves");
 check(/checkbeforesolve/.test(body), "mentions the check it adds itself");
 
+// The bridge instructions must be complete and name this page's origin.
+const bridgeCommands = await page.textContent("#twsearch-help-bridge-commands");
+check(/git clone/.test(bridgeCommands), "tells you how to get twsearch", bridgeCommands.split("\n")[0]);
+check(/make build/.test(bridgeCommands), "tells you how to build it");
+check(/twsearch-bridge\.mjs/.test(bridgeCommands), "tells you how to run the bridge");
+const bridgeOrigin = await page.textContent("#twsearch-help-bridge-origin");
+const origin = new URL(base).origin;
+check(bridgeOrigin.includes(`--allow-origin ${origin}`), "names this page's origin for --allow-origin", bridgeOrigin);
+check(/native \(twsearch bridge\)|native/.test(body), "says what the status looks like when it is in use");
+
 const options = await page.$$eval("#twsearch-help-options dt", (ds) => ds.map((d) => d.textContent));
 check(options.length > 15, `documents ${options.length} options`);
 for (const option of options) {

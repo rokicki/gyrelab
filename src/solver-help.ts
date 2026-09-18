@@ -41,6 +41,24 @@ export const HELP_OPTIONS: HelpOption[] = [
   { option: "-v2", flags: ["-v2"], text: "More output while searching; -v3 for more again, --quiet for less." },
 ];
 
+/** How to build and run the native bridge, for the page it is shown on. */
+export const BRIDGE_REPOSITORY = "https://github.com/rokicki/twsearch";
+
+export function bridgeCommands(): string {
+  return [
+    `git clone -b explorer-integration ${BRIDGE_REPOSITORY}`,
+    "cd twsearch",
+    "make build",
+    "node src/js/twsearch-bridge.mjs --max-mem 8192",
+  ].join("\n");
+}
+
+export function bridgeOriginCommand(origin: string): string {
+  // A page opened from a file has no origin a bridge can allow.
+  const allowed = /^https?:\/\//.test(origin) ? origin : "https://the.site";
+  return `node src/js/twsearch-bridge.mjs --max-mem 8192 --allow-origin ${allowed}`;
+}
+
 /** Fills the dialog's option list. */
 export function renderHelpOptions(list: HTMLElement): void {
   list.textContent = "";

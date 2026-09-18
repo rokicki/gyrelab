@@ -338,6 +338,14 @@ twisty-puzzle-description-input button.add {
   margin: 1em 0 0.3em;
 }
 
+#twsearch-help-body pre {
+  background: #eee;
+  padding: 0.5em;
+  margin: 0 0 0.5em;
+  overflow-x: auto;
+  white-space: pre;
+}
+
 #twsearch-help-body code {
   background: #eee;
   padding: 0 0.2em;

@@ -1,0 +1,58 @@
+# Apache settings for the Twizzle Explorer static site.
+#
+# The site works without this file; it only makes the site smaller over the
+# wire and better behaved in caches.  Copy the directory to a server as it
+# is.  Every block is guarded by <IfModule>, so a server missing one of these
+# modules ignores that part instead of failing.
+#
+# This file only takes effect where the server allows it, which means
+# AllowOverride in the server configuration for this directory:
+#
+#     <Directory /var/www/explorer>
+#         AllowOverride FileInfo Indexes
+#     </Directory>
+#
+# With AllowOverride None (the default in Apache 2.4) the file is ignored.
+# The same settings can be put in that <Directory> block instead, in which
+# case this file is not needed at all.
+
+# Compression.  main.js is about 1.5MB and compresses to about 440KB; it
+# holds the Explorer, cubing.js, and twsearch compiled to WebAssembly.  Fonts
+# (woff, woff2) are already compressed, so they are left out.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/plain text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/json
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType font/woff2 .woff2
+    AddType font/woff .woff
+    # Not used today: this build embeds the WebAssembly in main.js.
+    AddType application/wasm .wasm
+</IfModule>
+
+<IfModule mod_headers.c>
+    # Files under assets/ have a hash in the name, so a change gives a new
+    # name and these can be kept for a year.
+    <FilesMatch "-[A-Za-z0-9]{8}\.(woff2?|png|ico|css|js)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    # These keep their names when they change, so they must be checked each
+    # time; without this a browser can keep serving an old Explorer.
+    <FilesMatch "^(index\.html|help\.html|main\.js|index\.css|favicon\.ico|app-icon\.png)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# Cross-origin isolation (Cross-Origin-Opener-Policy and
+# Cross-Origin-Embedder-Policy) is deliberately NOT set here.  The twsearch
+# WebAssembly in this site is single-threaded and uses no SharedArrayBuffer,
+# so isolation would buy nothing, and COEP would block cross-origin images,
+# fonts, and frames that a page like this may want.
+#
+# Nothing is needed here for the native twsearch bridge either.  The browser
+# talks to it at http://127.0.0.1:2023, and the bridge answers the CORS and
+# Private Network Access preflights itself; browsers treat 127.0.0.1 as
+# trustworthy, so a page served over https may still talk to it.

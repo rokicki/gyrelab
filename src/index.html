@@ -169,6 +169,31 @@
             <p>twsearch's other commands (<code>-g</code>, <code>--schreiersims</code>
               and the rest) are not available here; they do not solve a position, and
               the browser build leaves most of them out.</p>
+
+            <h3>Running twsearch natively</h3>
+            <p>Searching in the browser is fine for small puzzles, but a 3x3x3 from
+              the Scramble button wants a real twsearch: all your cores, and as much
+              memory as you care to give it.  The Explorer will use one running on
+              your own computer, through a small program called the bridge, and says
+              <b>native (twsearch bridge)</b> in the status while it does.  Nothing
+              is uploaded: the bridge listens only on your own machine, and this page
+              hands it the same file the <b>Export...</b> button shows you.</p>
+            <p>You need <code>git</code>, a C++ compiler, and
+              <code>node</code>.  Then:</p>
+            <pre id="twsearch-help-bridge-commands"></pre>
+            <p>Leave that running and come back to this page; the Solver finds it by
+              itself (the channel next to the Solve button says Auto).  The first
+              search on a puzzle spends its time building a pruning table, and later
+              searches on the same puzzle reuse it, so they are much quicker: a
+              3x3x3 took about four minutes and then seconds.  Give it more memory
+              for a faster search: <code>--max-mem 16384</code> is 16GB, and the
+              <code>-M</code> option above never exceeds it.</p>
+            <p>If the Solver keeps saying WebAssembly while the bridge is running, the
+              bridge is refusing this page.  It only answers pages it knows, so start
+              it with this page's address:</p>
+            <pre id="twsearch-help-bridge-origin"></pre>
+            <p>The bridge accepts only the options listed above, caps the memory at
+              what you gave it, and can be stopped with Ctrl-C.</p>
           </div>
         </dialog>
         <dialog id="twsearch-export-dialog">
