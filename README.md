@@ -1,11 +1,11 @@
 # Gyrelab
 
 A workbench for twisty puzzles: turn one, paint a position onto it, and have
-twsearch solve it.  It grows out of the Twizzle Explorer (cubing.js's
-`src/sites/alpha.twizzle.net/explore/`), and adds a Solver tab that solves
-the position at the end of the alg (including Scramble-button setups)
-natively when twsearch is serving on this computer, and with the WebAssembly
-build in the browser otherwise.
+twsearch solve it.  Built from the Twizzle Explorer (cubing.js's
+`src/sites/alpha.twizzle.net/explore/`), with a Solver tab that solves the
+position at the end of the alg (including Scramble-button setups) natively
+when twsearch is serving on this computer, and with the WebAssembly build in
+the browser otherwise.
 
 The name is Carroll's, by way of the gyre: *twas brillig, and the slithy
 toves did gyre and gimble in the wabe*.  A gyre is a turn.
