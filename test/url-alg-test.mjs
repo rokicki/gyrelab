@@ -17,7 +17,8 @@ const show = async (label, expected) => {
   if (!ok) failures++;
   console.log(`${ok ? "ok  " : "FAIL"} ${label} alg param ${JSON.stringify(alg)} (alg ${JSON.stringify(playerAlg)}), expected ${JSON.stringify(expected)}`);
 };
-await page.goto("http://localhost:3334/?puzzle=3x3x3&alg=" + encodeURIComponent("R U"));
+const base = process.env.EXPLORER_URL ?? "http://localhost:3334/";
+await page.goto(`${base}?puzzle=3x3x3&alg=${encodeURIComponent("R U")}`);
 await page.waitForSelector("twisty-player");
 await show("1. start                 ", "R U");
 await page.click("#scramble"); await page.waitForTimeout(800);

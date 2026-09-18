@@ -1,6 +1,6 @@
 // For a puzzle description or name: Scramble-button states, our reachability
 // verdict, and whether native twsearch solves them within a depth limit.
-//    node test/run-ts.mjs test/scramble-reach.ts mastermorphix [trials]
+//    bun test/scramble-reach.ts mastermorphix [trials]
 import { spawnSync } from "node:child_process";
 import { unlinkSync, writeFileSync } from "node:fs";
 import { KPuzzle, KTransformation } from "cubing/kpuzzle";
@@ -27,7 +27,7 @@ for (let t = 0; t < Number(trials); t++) {
     const state = patternToScrambleState(pattern, tws);
     const f = `/tmp/claude-sr-${process.pid}`;
     writeFileSync(`${f}.tws`, tws); writeFileSync(`${f}.scr`, state);
-    const r = spawnSync(`${process.cwd()}/../twsearch/build/bin/twsearch`, ["--nowrite", "-M", "256", "--quiet", "--maxdepth", "16", `${f}.tws`, `${f}.scr`], { encoding: "utf8", timeout: 60000 });
+    const r = spawnSync(new URL("../twsearch/build/bin/twsearch", import.meta.url).pathname, ["--nowrite", "-M", "256", "--quiet", "--maxdepth", "16", `${f}.tws`, `${f}.scr`], { encoding: "utf8", timeout: 60000 });
     unlinkSync(`${f}.tws`); unlinkSync(`${f}.scr`);
     solve = (r.stdout.match(/Found \d+ solutions? max depth \d+|No solution found in \d+/) ?? [r.error ? "TIMEOUT" : r.stderr.trim()])[0];
   } catch (e) {

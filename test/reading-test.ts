@@ -6,7 +6,7 @@
 // identical (the 4x4x4 flipped edge), but twsearch's check can, whenever
 // twsearch treats those pieces as distinct.
 //
-//    node test/run-ts.mjs test/reading-test.ts
+//    bun test/reading-test.ts
 import { spawnSync } from "node:child_process";
 import { unlinkSync, writeFileSync } from "node:fs";
 import { KPuzzle } from "cubing/kpuzzle";
@@ -15,7 +15,7 @@ import { rotationTransformations } from "../src/color-check";
 import { buildStickerModel, colorsToPattern, patternToColors } from "../src/sticker-colors";
 import { ksolveMoveNames, patternToScrambleState, setOmissionFromArgs, twsearchKsolve } from "../src/twsearch-state";
 
-const twsearch = `${process.cwd()}/../twsearch/build/bin/twsearch`;
+const twsearch = new URL("../twsearch/build/bin/twsearch", import.meta.url).pathname;
 const named = getPG3DNamedPuzzles() as Record<string, string>;
 const refused = new Set(["30x30x30", "40x40x40", "zetaminx", "yottaminx"]);
 let checked = 0;

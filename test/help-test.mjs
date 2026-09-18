@@ -7,7 +7,7 @@ import { chromium } from "playwright";
 import { readFileSync } from "node:fs";
 
 const base = process.env.EXPLORER_URL ?? "http://localhost:3334/";
-const bridgeSource = readFileSync("../twsearch/src/js/twsearch-bridge.mjs", "utf8");
+const bridgeSource = readFileSync(new URL("../twsearch/src/js/twsearch-bridge.mjs", import.meta.url), "utf8");
 const allowed = new Set(
   [...bridgeSource.matchAll(/^\s*\["(-[^"]+)", \d\],$/gm)].map((m) => m[1]),
 );

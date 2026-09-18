@@ -3,7 +3,7 @@
 // the identity labeling, since that option throws away the solved state that
 // names pieces by color.
 //
-//    node test/run-ts.mjs test/distinguishall-test.ts
+//    bun test/distinguishall-test.ts
 import { spawnSync } from "node:child_process";
 import { unlinkSync, writeFileSync } from "node:fs";
 import { KPattern, KPuzzle } from "cubing/kpuzzle";
@@ -11,7 +11,7 @@ import { buildStickerModel, type StickerModel } from "../src/sticker-colors";
 import { ExperimentalPGNotation, getPuzzleDescriptionString, getPuzzleGeometryByDesc } from "cubing/puzzle-geometry";
 import { patternToScrambleState, twsearchKsolve } from "../src/twsearch-state";
 
-const twsearch = `${process.cwd()}/../twsearch/build/bin/twsearch`;
+const twsearch = new URL("../twsearch/build/bin/twsearch", import.meta.url).pathname;
 // puzzle, and either an alg or a 3-cycle of pieces that look alike, which is
 // invisible on the puzzle itself and only exists in the superpuzzle.
 type Case = { name: string; alg?: string; cycleLookalikes?: string; what: string };

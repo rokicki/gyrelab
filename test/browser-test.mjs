@@ -1,6 +1,6 @@
 // Drives the Explorer in headless Chrome (the installed Chrome; nothing is
 // downloaded).  Start `npm run dev` first; for the bridge tests also run
-// `node src/js/twsearch-bridge.mjs` in ../twsearch.
+// `twsearch/build/bin/twsearch --serve` (bun run build-twsearch first).
 //
 //    node test/browser-test.mjs [wasm|bridge|screenshot]
 import { chromium } from "playwright";

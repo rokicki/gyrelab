@@ -46,7 +46,7 @@ export const BRIDGE_REPOSITORY = "https://github.com/rokicki/twsearch";
 
 export function bridgeCommands(): string {
   return [
-    `git clone -b explorer-integration ${BRIDGE_REPOSITORY}`,
+    `git clone ${BRIDGE_REPOSITORY}`,
     "cd twsearch",
     "make build",
     "./build/bin/twsearch --serve -M 8192",

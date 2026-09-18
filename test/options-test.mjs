@@ -1,7 +1,7 @@
 // Which twsearch options work from the Solver tab, on both channels.
 // Runs the same short solve with each option and reports what came back, so
 // the help text only promises what actually works.  Start `npm run dev`
-// first, and the bridge (node src/js/twsearch-bridge.mjs in ../twsearch) for
+// first, and `twsearch/build/bin/twsearch --serve` for
 // the bridge column.
 //
 //    node test/options-test.mjs [wasm|bridge|both]

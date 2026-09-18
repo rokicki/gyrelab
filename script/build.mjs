@@ -1,9 +1,9 @@
 // Builds the Explorer.
 //
-//    node script/build.mjs              dev build into dist/
-//    node script/build.mjs --serve      dev build, rebuilt on change, served
+//    bun script/build.mjs               dev build into dist/
+//    bun script/build.mjs --serve       dev build, rebuilt on change, served
 //                                       at http://localhost:3334/
-//    node script/build.mjs --site DIR   static site into DIR
+//    bun script/build.mjs --site DIR    static site into DIR
 //
 // The static site works from any web server and also opened directly from
 // the filesystem (file://).  Browsers refuse module scripts and worker
@@ -15,11 +15,10 @@ import * as esbuild from "esbuild";
 
 const src = new URL("../src/", import.meta.url).pathname;
 
-// Which cubing.js to build against.  With CUBING_LIB set (the top-level
-// Makefile sets it for `CUBING = local`), "cubing/..." comes from that
-// directory, which is the local cubing.js checkout's build, so changes to it
-// show up here.  Without it, the published cubing package in node_modules is
-// used.  See the Makefile in the directory above this repository.
+// Which cubing.js to build against.  Normally the published cubing package
+// in node_modules.  With CUBING_LIB set to the dist/lib/cubing directory of
+// a built cubing.js checkout, "cubing/..." comes from there instead, for
+// trying changes to cubing.js itself.
 const cubingLib = process.env.CUBING_LIB;
 const localCubing = {
   name: "local-cubing",

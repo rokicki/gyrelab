@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const base = process.env.EXPLORER_URL ?? "http://localhost:3334/";
-const twsearch = process.env.TWSEARCH ?? "../twsearch/build/bin/twsearch";
+const twsearch = process.env.TWSEARCH ?? new URL("../twsearch/build/bin/twsearch", import.meta.url).pathname;
 const dir = mkdtempSync(join(tmpdir(), "export-test-"));
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });

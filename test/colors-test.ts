@@ -4,7 +4,7 @@
 // - swapped, twisted, and rotated variants get the same verdict from our
 //   Schreier-Sims as from twsearch's --checkbeforesolve (where twsearch can
 //   check: all pieces distinct in its puzzle).
-// Run from the explorer directory: node test/run-ts.mjs test/colors-test.ts [descriptions...]
+// Run from the gyrelab directory: bun test/colors-test.ts [descriptions...]
 import { spawnSync } from "node:child_process";
 import { unlinkSync, writeFileSync } from "node:fs";
 import { KPattern, KPuzzle } from "cubing/kpuzzle";
@@ -13,7 +13,7 @@ import { ReachabilityChecker, rotationTransformations } from "../src/color-check
 import { buildStickerModel, colorsToPattern, patternToColors } from "../src/sticker-colors";
 import { ksolveMoveNames, patternToScrambleState, twsearchKsolve } from "../src/twsearch-state";
 
-const twsearch = `${process.cwd()}/../twsearch/build/bin/twsearch`;
+const twsearch = new URL("../twsearch/build/bin/twsearch", import.meta.url).pathname;
 const custom = ["c f 0.2 v 0.8", "d f 0.5 e 0.9", "o f 0.3 v 0.6", "t v 0.2 e 0.5", "i v 0.8"];
 const args = process.argv.slice(2);
 const descs: [string, string][] = args.length

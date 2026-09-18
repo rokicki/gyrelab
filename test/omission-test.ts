@@ -5,7 +5,7 @@
 // break each orbit in turn (a swapped pair, a twisted piece, a rotation).
 // Cases where twsearch can't check (identical pieces left) are skipped.
 //
-//    node test/run-ts.mjs test/omission-test.ts
+//    bun test/omission-test.ts
 import { spawnSync } from "node:child_process";
 import { unlinkSync, writeFileSync } from "node:fs";
 import { KPattern, KPuzzle } from "cubing/kpuzzle";
@@ -14,7 +14,7 @@ import { ReachabilityChecker, rotationTransformations } from "../src/color-check
 import { buildStickerModel } from "../src/sticker-colors";
 import { ksolveMoveNames, patternToScrambleState, setOmissionFromArgs, twsearchKsolve } from "../src/twsearch-state";
 
-const twsearch = `${process.cwd()}/../twsearch/build/bin/twsearch`;
+const twsearch = new URL("../twsearch/build/bin/twsearch", import.meta.url).pathname;
 const named = getPG3DNamedPuzzles() as Record<string, string>;
 const cases: [string, string[]][] = [
   ["3x3x3", []],

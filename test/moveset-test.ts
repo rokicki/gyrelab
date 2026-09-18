@@ -10,8 +10,8 @@
 //   twsearch's --checkbeforesolve (where twsearch can check: all pieces
 //   distinct in its puzzle).
 //
-// Run from the explorer directory (needs ../twsearch/build/bin/twsearch):
-//    node test/run-ts.mjs test/moveset-test.ts [--no-oracle] [puzzle name ...]
+// Needs the native twsearch (bun run build-twsearch):
+//    bun test/moveset-test.ts [--no-oracle] [puzzle name ...]
 import { spawnSync } from "node:child_process";
 import { unlinkSync, writeFileSync } from "node:fs";
 import { KPattern, KPuzzle } from "cubing/kpuzzle";
@@ -20,7 +20,7 @@ import { ReachabilityChecker, rotationTransformations } from "../src/color-check
 import { buildStickerModel } from "../src/sticker-colors";
 import { ksolveMoveNames, patternToScrambleState, twsearchKsolve } from "../src/twsearch-state";
 
-const twsearch = `${process.cwd()}/../twsearch/build/bin/twsearch`;
+const twsearch = new URL("../twsearch/build/bin/twsearch", import.meta.url).pathname;
 const args = process.argv.slice(2);
 const noOracle = args.includes("--no-oracle");
 const only = args.filter((a) => !a.startsWith("--"));
