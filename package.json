@@ -1,8 +1,8 @@
 {
-  "name": "twsearch-explorer",
+  "name": "gyrelab",
   "private": true,
   "type": "module",
-  "description": "Twizzle Explorer with twsearch solving, built on the published cubing package.",
+  "description": "Gyrelab: a workbench for twisty puzzles, built on cubing.js, with twsearch doing the searching.",
   "scripts": {
     "build": "node script/build.mjs",
     "dev": "node script/build.mjs --serve",

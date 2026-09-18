@@ -49,14 +49,14 @@ export function bridgeCommands(): string {
     `git clone -b explorer-integration ${BRIDGE_REPOSITORY}`,
     "cd twsearch",
     "make build",
-    "node src/js/twsearch-bridge.mjs --max-mem 8192",
+    "./build/bin/twsearch --serve -M 8192",
   ].join("\n");
 }
 
 export function bridgeOriginCommand(origin: string): string {
-  // A page opened from a file has no origin a bridge can allow.
+  // A page opened from a file has no origin that can be allowed.
   const allowed = /^https?:\/\//.test(origin) ? origin : "https://the.site";
-  return `node src/js/twsearch-bridge.mjs --max-mem 8192 --allow-origin ${allowed}`;
+  return `./build/bin/twsearch --serve -M 8192 --allow-origin ${allowed}`;
 }
 
 /** Fills the dialog's option list. */

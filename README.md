@@ -1,9 +1,14 @@
-# Explorer with twsearch
+# Gyrelab
 
-The Twizzle Explorer (from cubing.js's `src/sites/alpha.twizzle.net/explore/`)
-with a Solver tab that solves the displayed position at the end of the alg
-(including Scramble-button setups) with twsearch: natively through the twsearch bridge when it is running on this
-computer, otherwise with the WebAssembly build in the browser.
+A workbench for twisty puzzles: turn one, paint a position onto it, and have
+twsearch solve it.  Built from the Twizzle Explorer (cubing.js's
+`src/sites/alpha.twizzle.net/explore/`), with a Solver tab that solves the
+position at the end of the alg (including Scramble-button setups) natively
+when twsearch is serving on this computer, and with the WebAssembly build in
+the browser otherwise.
+
+The name is Carroll's, by way of the gyre: *twas brillig, and the slithy
+toves did gyre and gimble in the wabe*.  A gyre is a turn.
 
 It uses only the public API of the published `cubing` npm package (pinned
 in `package.json`), so cubing.js itself is unmodified.  The few cubing.js

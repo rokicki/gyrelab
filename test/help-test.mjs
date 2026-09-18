@@ -38,7 +38,7 @@ check(/checkbeforesolve/.test(body), "mentions the check it adds itself");
 const bridgeCommands = await page.textContent("#twsearch-help-bridge-commands");
 check(/git clone/.test(bridgeCommands), "tells you how to get twsearch", bridgeCommands.split("\n")[0]);
 check(/make build/.test(bridgeCommands), "tells you how to build it");
-check(/twsearch-bridge\.mjs/.test(bridgeCommands), "tells you how to run the bridge");
+check(/--serve/.test(bridgeCommands), "tells you how to start it serving");
 const bridgeOrigin = await page.textContent("#twsearch-help-bridge-origin");
 const origin = new URL(base).origin;
 check(bridgeOrigin.includes(`--allow-origin ${origin}`), "names this page's origin for --allow-origin", bridgeOrigin);
