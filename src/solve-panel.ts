@@ -10,9 +10,10 @@ import {
 } from "./twsearch-channel";
 import { getMoveSetText, moveSetEvents, setMoveSetText } from "./move-set";
 import {
-  bridgeCommands,
-  bridgeOriginCommand,
+  macCommands,
+  originOption,
   renderHelpOptions,
+  windowsCommands,
 } from "./solver-help";
 import {
   patternToScrambleState,
@@ -101,8 +102,9 @@ export class TwsearchSolvePanel {
     this.exportButton.addEventListener("click", () => void this.showExport());
     const helpDialog = element<HTMLDialogElement>("twsearch-help-dialog");
     renderHelpOptions(element("twsearch-help-options"));
-    element("twsearch-help-bridge-commands").textContent = bridgeCommands();
-    element("twsearch-help-bridge-origin").textContent = bridgeOriginCommand(
+    element("twsearch-help-mac").textContent = macCommands();
+    element("twsearch-help-windows").textContent = windowsCommands();
+    element("twsearch-help-bridge-origin").textContent = originOption(
       globalThis.location.origin,
     );
     element<HTMLButtonElement>("twsearch-help-button").addEventListener(

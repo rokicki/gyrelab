@@ -171,30 +171,22 @@
               the browser build leaves most of them out.</p>
 
             <h3>Running twsearch natively</h3>
-            <p>Searching in the browser is fine for small puzzles, but a 3x3x3 from
-              the Scramble button wants a real twsearch: all your cores, and as much
-              memory as you care to give it.  The Explorer will use one running on
-              your own computer, through a small program called the bridge, and says
-              <b>native (twsearch bridge)</b> in the status while it does.  Nothing
-              is uploaded: the bridge listens only on your own machine, and this page
-              hands it the same file the <b>Export...</b> button shows you.</p>
-            <p>You need <code>git</code> and a C++ compiler.  Then:</p>
-            <pre id="twsearch-help-bridge-commands"></pre>
-            <p>Leave that running and come back to this page; the Solver finds it by
-              itself (the channel next to the Solve button says Auto).  The first
-              search on a puzzle spends its time building a pruning table, and later
-              searches on the same puzzle reuse it, so they are much quicker: a
-              3x3x3 took about four minutes and then seconds.  Give it more memory
-              for a faster search: <code>-M 16384</code> is 16GB, and the
-              <code>-M</code> a search asks for never exceeds it.</p>
-            <p>If the Solver keeps saying WebAssembly while it is running, it is
-              refusing this page.  It only answers pages it knows, so start it with
-              this page's address:</p>
+            <p>For bigger searches (a 3x3x3 from Scramble, say), run twsearch on your
+              own machine.  The Solver finds it automatically and shows
+              <b>native (twsearch bridge)</b>.  Nothing leaves your machine.</p>
+            <p>On a Mac, in Terminal:</p>
+            <pre id="twsearch-help-mac"></pre>
+            <p>On Windows, in PowerShell or Command Prompt:</p>
+            <pre id="twsearch-help-windows"></pre>
+            <p>Leave it running.  The first search on a puzzle builds a pruning table
+              (minutes for a 3x3x3); later ones take seconds.  <code>-M 16384</code>
+              gives it 16GB.  Stop it with Ctrl-C.</p>
+            <p>If the Solver still says WebAssembly, add this page's address to the
+              command:</p>
             <pre id="twsearch-help-bridge-origin"></pre>
-            <p>It accepts only the options listed above, never uses more memory than
-              you gave it, and stops with Ctrl-C.  (There is also a version that runs
-              under node, <code>src/js/twsearch-bridge.mjs</code>, which behaves the
-              same.)</p>
+            <p>On Linux, or to build it yourself: <code>git clone
+              https://github.com/rokicki/twsearch</code>, then <code>make build</code>
+              (needs a C++ compiler).</p>
           </div>
         </dialog>
         <dialog id="twsearch-export-dialog">

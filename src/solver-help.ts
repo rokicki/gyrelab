@@ -41,22 +41,29 @@ export const HELP_OPTIONS: HelpOption[] = [
   { option: "-v2", flags: ["-v2"], text: "More output while searching; -v3 for more again, --quiet for less." },
 ];
 
-/** How to build and run the native bridge, for the page it is shown on. */
+/** How to get twsearch and start it serving, for the page it is shown on. */
 export const BRIDGE_REPOSITORY = "https://github.com/rokicki/twsearch";
+const LATEST = `${BRIDGE_REPOSITORY}/releases/latest/download`;
 
-export function bridgeCommands(): string {
+export function macCommands(): string {
   return [
-    `git clone ${BRIDGE_REPOSITORY}`,
-    "cd twsearch",
-    "make build",
-    "./build/bin/twsearch --serve -M 8192",
+    `curl -L -o twsearch ${LATEST}/twsearch-macos`,
+    "chmod +x twsearch",
+    "./twsearch --serve -M 8192",
   ].join("\n");
 }
 
-export function bridgeOriginCommand(origin: string): string {
+export function windowsCommands(): string {
+  return [
+    `curl.exe -L -o twsearch.exe ${LATEST}/twsearch-windows-x64.exe`,
+    ".\\twsearch.exe --serve -M 8192",
+  ].join("\n");
+}
+
+export function originOption(origin: string): string {
   // A page opened from a file has no origin that can be allowed.
   const allowed = /^https?:\/\//.test(origin) ? origin : "https://the.site";
-  return `./build/bin/twsearch --serve -M 8192 --allow-origin ${allowed}`;
+  return `--allow-origin ${allowed}`;
 }
 
 /** Fills the dialog's option list. */

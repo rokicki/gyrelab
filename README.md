@@ -29,7 +29,8 @@ needs only bun.  Two things need more:
       bun run build-twsearch
       twsearch/build/bin/twsearch --serve
 
-  The Solver tab then finds it by itself.
+  The Solver tab then finds it by itself.  Just want to solve?  Download a
+  prebuilt twsearch instead; the Solver tab's Help... has the commands.
 
 - **Updating the WebAssembly twsearch** (if the submodule changes) needs
   [emsdk](https://emscripten.org/) (in `~/emsdk`, or set `EMSDK`):

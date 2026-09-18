@@ -35,14 +35,20 @@ check(/blank/i.test(body), "says blank means the puzzle's own moves");
 check(/checkbeforesolve/.test(body), "mentions the check it adds itself");
 
 // The bridge instructions must be complete and name this page's origin.
-const bridgeCommands = await page.textContent("#twsearch-help-bridge-commands");
-check(/git clone/.test(bridgeCommands), "tells you how to get twsearch", bridgeCommands.split("\n")[0]);
-check(/make build/.test(bridgeCommands), "tells you how to build it");
-check(/--serve/.test(bridgeCommands), "tells you how to start it serving");
-const bridgeOrigin = await page.textContent("#twsearch-help-bridge-origin");
+// How to get twsearch natively: a download for each platform, and this
+// page's origin for --allow-origin.
+const mac = await page.textContent("#twsearch-help-mac");
+check(/releases\/latest\/download\/twsearch-macos\b/.test(mac), "Mac: downloads the latest release", mac.split("\n")[0]);
+check(/chmod \+x twsearch/.test(mac), "Mac: makes it executable");
+check(/--serve/.test(mac), "Mac: starts it serving");
+const windows = await page.textContent("#twsearch-help-windows");
+check(/curl\.exe .*releases\/latest\/download\/twsearch-windows-x64\.exe/.test(windows), "Windows: downloads the latest release", windows.split("\n")[0]);
+check(/twsearch\.exe --serve/.test(windows), "Windows: starts it serving");
+const originLine = await page.textContent("#twsearch-help-bridge-origin");
 const origin = new URL(base).origin;
-check(bridgeOrigin.includes(`--allow-origin ${origin}`), "names this page's origin for --allow-origin", bridgeOrigin);
-check(/native \(twsearch bridge\)|native/.test(body), "says what the status looks like when it is in use");
+check(originLine.trim() === `--allow-origin ${origin}`, "names this page's origin for --allow-origin", originLine);
+check(/make build/.test(body), "says how to build it yourself");
+check(/native \(twsearch bridge\)/.test(body), "says what the status looks like when it is in use");
 
 const options = await page.$$eval("#twsearch-help-options dt", (ds) => ds.map((d) => d.textContent));
 check(options.length > 15, `documents ${options.length} options`);
