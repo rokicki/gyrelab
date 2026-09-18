@@ -2,9 +2,9 @@
 
 A workbench for twisty puzzles built from
 [Twizzle Explorer](https://alpha.twizzle.net/explore/) and twsearch,
-with a color picker tab and a solver tab.  Uses an
-embedded wasm server for twsearch, or for deeper, faster searches, a
-local native twsearch executable.
+with Colors and Solver tabs.  Solves with twsearch in the browser
+(WebAssembly), or, for deeper, faster searches, a native twsearch on your
+machine.
 
 ## Building and developing
 
@@ -16,14 +16,12 @@ clone with it:
     bun install
     bun run dev             # http://localhost:3334/, rebuilt as you edit
 
-`bun run site` builds a static site into `site/` that works from any web
-server and also opened straight from the filesystem: one classic script,
-with the twsearch worker embedded and started from a Blob URL (browsers
-refuse module and worker scripts from file:// URLs).  `bun run build` writes
-a development build to `dist/`, and `bun run check` type-checks.
+`bun run site` builds a static site into `site/`; it works from any web
+server or opened straight from the filesystem.  `bun run check`
+type-checks.
 
-The WebAssembly twsearch in `vendor/twsearch/` is committed, so none of that
-needs anything but bun.  Two things do need more:
+The WebAssembly twsearch is prebuilt in `vendor/twsearch/`, so building
+needs only bun.  Two things need more:
 
 - **Solving natively**, and the tests that compare against twsearch, need
   twsearch built from the submodule, which takes a C++ compiler:
@@ -33,13 +31,13 @@ needs anything but bun.  Two things do need more:
 
   The Solver tab then finds it by itself.
 
-- **Updating the WebAssembly twsearch** after the submodule moves on needs
+- **Updating the WebAssembly twsearch** (if the submodule changes) needs
   [emsdk](https://emscripten.org/) (in `~/emsdk`, or set `EMSDK`):
 
       bun run update-twsearch
 
-  which builds it and copies it into `vendor/twsearch/`, recording the
-  twsearch commit in `VERSION.txt`.
+  This builds it into `vendor/twsearch/` and records the commit in
+  `VERSION.txt`.
 
 The tests run under bun as well: `bun test/moveset-test.ts`, and so on (see
 below).  The browser tests drive Chrome through Playwright and expect
@@ -94,8 +92,12 @@ Dual-licensed as [MPL](./LICENSE-MPL.md) and [GPL](./LICENSE-GPL.md), the
 same as cubing.js and twsearch, so a project using any of them is under one
 license throughout.
 
-Two things here are somebody else's work, under their own terms: the
-WebAssembly twsearch in `vendor/twsearch/`, which is a build of twsearch
-(the same dual license, and it carries CityHash under the MIT license), and
-the Ubuntu font that `@fontsource/ubuntu` brings in, under the Ubuntu Font
-License.
+## Acknowledgements
+
+This project was built using Claude, integrating the cubing.js Explorer code
+and the C++ twsearch code; it serves entirely as glue between those two
+projects.
+
+The WebAssembly build in `vendor/twsearch/` is twsearch (same dual license;
+includes CityHash, MIT).  The Ubuntu font from `@fontsource/ubuntu` is under the
+Ubuntu Font License.
