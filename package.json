@@ -9,7 +9,7 @@
     "build": "bun script/build.mjs",
     "site": "bun script/build.mjs --site site",
     "check": "tsc --noEmit",
-    "build-twsearch": "make -C twsearch build",
+    "build-twsearch": "bun script/build-twsearch.mjs",
     "update-twsearch": "bun script/update-twsearch.mjs"
   },
   "dependencies": {

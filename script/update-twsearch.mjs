@@ -7,16 +7,13 @@
 // The built copy is committed so that building Gyrelab needs only bun; this
 // is for when twsearch moves on.
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { checkTwsearchSubmodule, twsearchDir as twsearch } from "./twsearch-submodule.mjs";
 
-const twsearch = new URL("../twsearch/", import.meta.url);
 const from = new URL("build/wasm/", twsearch);
 const to = new URL("../vendor/twsearch/", import.meta.url);
 
-if (!existsSync(new URL("Makefile", twsearch))) {
-  console.error("The twsearch submodule is missing: git submodule update --init");
-  process.exit(1);
-}
+checkTwsearchSubmodule();
 const emsdk = process.env.EMSDK ?? `${process.env.HOME}/emsdk`;
 execFileSync("make", ["-C", twsearch.pathname, "build-wasm", `EMSDK=${emsdk}`], {
   stdio: "inherit",
