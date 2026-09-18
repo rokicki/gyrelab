@@ -14,6 +14,7 @@ import type { TwistyAlgEditor, TwistyPlayer } from "cubing/twisty";
 import { constructMoveCountDisplay } from "./move-count";
 import { ColorPainter } from "./color-painter";
 import { TwsearchSolvePanel } from "./solve-panel";
+import { scrambleMoves, scrambleTransformation } from "./scramble";
 import { constructTwistyPlayer } from "./twisty-player";
 import "./TwistyPuzzleDescriptionInput";
 import {
@@ -215,15 +216,14 @@ class ConfigUI {
       this.descInput.value = getPuzzleDescriptionString(puzzleName);
     }
 
-    this.scrambleButton.addEventListener("click", async () => {
+    this.scrambleButton.addEventListener("click", () => {
+      // Scrambled with the Solver tab's move set when it has one, and with
+      // the puzzle's own moves otherwise, so that what you are given to
+      // solve is something those moves can solve (see scramble.ts).
       this.app.twistyPlayer.experimentalModel.setupTransformation.set(
         (async () => {
-          const loader =
-            await this.app.twistyPlayer.experimentalModel.puzzleLoader.get();
-          const pg = await loader.pg!();
-          const kpuzzle = await loader.kpuzzle();
-          const scrambleTransformationData = pg.getScramble();
-          return new KTransformation(kpuzzle, scrambleTransformationData);
+          const { moves } = await scrambleMoves(this.app);
+          return scrambleTransformation(moves);
         })(),
       );
     });

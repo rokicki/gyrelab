@@ -77,8 +77,11 @@ if (mode === "screenshot") {
   await page.mouse.click(box.x + box.width * 0.25, box.y + box.height * 0.4);
   await page.waitForTimeout(700);
   console.log(ts(), "alg after clicking the puzzle: Solver tab ->", JSON.stringify(afterSolveTabClick), "; Edit Alg tab ->", JSON.stringify(new URL(page.url()).searchParams.get("alg")));
-  for (let trial = 0; trial < 3; trial++) for (const puzzle of ["2x2x2", "skewb", "pyraminx", "dino", "megaminx"]) {
-    if (puzzle === "megaminx" && trial > 0) continue;
+  // Scramble-button positions.  Only puzzles small enough to solve optimally
+  // in the browser are solved here; a real megaminx or 3x3x3 scramble is a
+  // job for the native bridge (see test/scramble-test.mjs, which checks that
+  // every scramble is at least a position the Solver's moves can reach).
+  for (let trial = 0; trial < 3; trial++) for (const puzzle of ["2x2x2", "skewb", "pyraminx", "dino"]) {
     const found = await solve(`wasm ${puzzle} Scramble button`, { puzzle, alg: "", channel: "wasm", scramble: true });
     if (found.length) {
       await page.click("#twsearch-solutions button");
