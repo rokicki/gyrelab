@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "description": "Gyrelab: a workbench for twisty puzzles, built on cubing.js, with twsearch doing the searching.",
+  "license": "MPL-2.0 OR GPL-3.0-or-later",
   "scripts": {
     "build": "node script/build.mjs",
     "dev": "node script/build.mjs --serve",

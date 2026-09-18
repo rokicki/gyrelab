@@ -79,3 +79,15 @@ made there (a Scramble fix, say) can be tried here.  The Makefile one
 directory up has a switch for it: `make site` uses the checkout,
 `make site CUBING=npm` uses the package.  Every build prints which one it
 used.  `test/run-ts.mjs` honors `CUBING_LIB` as well.
+
+## Licensing
+
+Dual-licensed as [MPL](./LICENSE-MPL.md) and [GPL](./LICENSE-GPL.md), the
+same as cubing.js and twsearch, so a project using any of them is under one
+license throughout.
+
+Two things here are somebody else's work, under their own terms: the
+WebAssembly twsearch in `vendor/twsearch/`, which is a build of twsearch
+(the same dual license, and it carries CityHash under the MIT license), and
+the Ubuntu font that `@fontsource/ubuntu` brings in, under the Ubuntu Font
+License.
