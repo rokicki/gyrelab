@@ -58,7 +58,7 @@ function element<T extends HTMLElement>(id: string): T {
   return document.getElementById(id) as T;
 }
 
-/** The "Solve" tab: solves the position at the end of the alg with twsearch. */
+/** The "Solver" tab: solves the position with twsearch. */
 export class TwsearchSolvePanel {
   solveButton = element<HTMLButtonElement>("twsearch-solve-button");
   cancelButton = element<HTMLButtonElement>("twsearch-cancel-button");
