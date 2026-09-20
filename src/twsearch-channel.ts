@@ -26,7 +26,39 @@ export interface TwsearchChannel {
 
 const BRIDGE_URL = "http://127.0.0.1:2023";
 
+/*
+ *   Browsers ask the reader's permission before a page may reach a program
+ *   on their own machine, and Chrome only offers that choice while a click
+ *   of theirs is still fresh: a request made later is refused outright, and
+ *   the refusal is remembered, so every later attempt fails too.  That is
+ *   why the Solver asks for the bridge first thing when a button is pressed,
+ *   before working out the position to solve.
+ */
+export type LocalNetworkPermission = "granted" | "prompt" | "denied" | "unknown";
+
+export async function localNetworkPermission(): Promise<LocalNetworkPermission> {
+  try {
+    const status = await navigator.permissions.query({
+      name: "local-network-access" as PermissionName,
+    });
+    return status.state as LocalNetworkPermission;
+  } catch {
+    // A browser that does not ask; the request itself will say.
+    return "unknown";
+  }
+}
+
+/** What to tell someone whose browser is refusing to reach their computer. */
+export const LOCAL_NETWORK_REFUSED =
+  "Your browser is not letting this page reach twsearch on your computer.  " +
+  "It asks the first time and remembers the answer: open the site settings " +
+  "(the icon at the left of the address bar), allow local network access, " +
+  "and try again.";
+
 export async function bridgeAvailable(): Promise<boolean> {
+  if ((await localNetworkPermission()) === "denied") {
+    return false;
+  }
   try {
     const response = await fetch(`${BRIDGE_URL}/v1/info`, {
       signal: AbortSignal.timeout(500),
@@ -80,7 +112,13 @@ export class BridgeChannel implements TwsearchChannel {
       }
     } catch (e) {
       if (!finished) {
-        emit({ type: "error", message: `bridge: ${e}` });
+        // A browser that refuses to reach this computer fails the same way
+        // as a bridge that is not running; say which it was.
+        const message =
+          (await localNetworkPermission()) === "denied"
+            ? LOCAL_NETWORK_REFUSED
+            : `bridge: ${e}`;
+        emit({ type: "error", message });
       }
     }
     if (!finished) {

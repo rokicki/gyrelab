@@ -4,6 +4,8 @@ import type { TwizzleExplorerApp } from "./app";
 import {
   BridgeChannel,
   bridgeAvailable,
+  localNetworkPermission,
+  LOCAL_NETWORK_REFUSED,
   type TwsearchChannel,
   type TwsearchEvent,
   WasmChannel,
@@ -216,8 +218,17 @@ export class TwsearchSolvePanel {
         return this.bridge;
       case "wasm":
         return this.wasm;
-      default:
-        return (await bridgeAvailable()) ? this.bridge : this.wasm;
+      default: {
+        if (await bridgeAvailable()) {
+          return this.bridge;
+        }
+        // Searching here is the right answer when no twsearch is running,
+        // but not when one is and the browser will not let us reach it.
+        if ((await localNetworkPermission()) === "denied") {
+          this.logElem.append(`${LOCAL_NETWORK_REFUSED}\n`);
+        }
+        return this.wasm;
+      }
     }
   }
 
@@ -283,6 +294,10 @@ export class TwsearchSolvePanel {
     this.solutionsElem.textContent = "";
     this.logElem.textContent = "";
     const args = this.searchArgs();
+    // Ask for the bridge first, while the press that started this is still
+    // fresh: a browser only offers to let a page reach this computer while
+    // that is true, and remembers a refusal (see twsearch-channel.ts).
+    const channel = await this.chooseChannel();
     let input: { tws: string; scramble: string };
     try {
       input = await this.input(args);
@@ -292,7 +307,6 @@ export class TwsearchSolvePanel {
       );
       return;
     }
-    const channel = await this.chooseChannel();
     if (channel === this.wasm && !args.includes("-M")) {
       args.push("-M", String(WASM_DEFAULT_MEGABYTES));
     }
