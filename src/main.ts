@@ -1,4 +1,19 @@
 import { TwizzleExplorerApp } from "./app";
+import markup from "./app.html";
+
+/*
+ *   The page's own markup travels with the program, so that a page carrying
+ *   nothing but a script tag becomes Gyrelab.  That is how twsearch serves
+ *   it: `twsearch --serve` answers with a few lines of HTML that fetch this
+ *   script, and the page then belongs to the same origin as the searches it
+ *   asks for, which is what browsers now insist on.
+ */
+function buildPage(): void {
+  if (document.querySelector("side-panel")) {
+    return; // a page that came with its own markup
+  }
+  document.body.insertAdjacentHTML("afterbegin", markup);
+}
 
 // The static site build (script/build.mjs --site) defines this as the
 // bundled twsearch worker's source, so the worker can start from a Blob URL:
@@ -19,5 +34,6 @@ function createTwsearchWorker(): Worker {
   });
 }
 
+buildPage();
 // Expose as a global for debugging.
 (globalThis as any).app = new TwizzleExplorerApp(createTwsearchWorker);

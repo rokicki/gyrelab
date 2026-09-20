@@ -64,7 +64,7 @@ if (siteIndex >= 0) {
       TWSEARCH_WORKER_SOURCE: JSON.stringify(worker.outputFiles[0].text),
       "import.meta.url": "document.baseURI",
     },
-    loader: { ".woff": "file", ".woff2": "file" },
+    loader: { ".woff": "file", ".woff2": "file", ".html": "text" },
     assetNames: "assets/[name]-[hash]",
     plugins: cubingPlugins,
     logLevel: "warning",
@@ -79,6 +79,32 @@ if (siteIndex >= 0) {
     '<script src="./main.js" defer></script>',
   );
   writeFileSync(`${out}/index.html`, html);
+  // What a page needs to become Gyrelab: it works out where it came from
+  // and brings in the rest from there.  twsearch --serve answers with a page
+  // holding nothing but a script tag pointing at this, so that the page and
+  // the searches it asks for share an origin; a released twsearch therefore
+  // knows one URL and nothing else about what the site looks like.
+  writeFileSync(
+    `${out}/boot.js`,
+    `(() => {
+  const here = document.currentScript.src;
+  const base = here.slice(0, here.lastIndexOf("/") + 1);
+  const style = document.createElement("link");
+  style.rel = "stylesheet";
+  style.href = base + "index.css";
+  document.head.append(style);
+  for (const [rel, file] of [["icon", "favicon.ico"], ["apple-touch-icon", "app-icon.png"]]) {
+    const icon = document.createElement("link");
+    icon.rel = rel;
+    icon.href = base + file;
+    document.head.append(icon);
+  }
+  const app = document.createElement("script");
+  app.src = base + "main.js";
+  document.head.append(app);
+})();
+`,
+  );
   console.log(`Static site in ${out}`);
 } else {
   const dist = new URL("../dist/", import.meta.url).pathname;
@@ -102,7 +128,7 @@ if (siteIndex >= 0) {
     target: "es2022",
     chunkNames: "chunks/[name]-[hash]",
     sourcemap: true,
-    loader: { ".woff": "file", ".woff2": "file" },
+    loader: { ".woff": "file", ".woff2": "file", ".html": "text" },
     logLevel: "info",
   };
   if (process.argv.includes("--serve")) {

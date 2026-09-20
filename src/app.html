@@ -1,0 +1,216 @@
+  <dialog id="stuff-for-nerds">
+    <span>The following has been copied to the clipboard.</span>
+    <form method="dialog">
+      <button type="submit">Close</button>
+    </form>
+    <textarea></textarea>
+  </dialog>
+  <div class="title">
+    <span><span>🌀</span>
+      Gyrelab <span style="opacity: 0.3">ᴬᴸᴾᴴᴬ</span></span>
+  </div>
+  <div class="controls-wrapper">
+    <div class="controls">
+      <select id="puzzle-name">
+        <option value="">custom</option>
+      </select>
+      <span id="puzzle-description-wrapper" hidden>Desc
+        <input type="text" id="puzzle-description-string" value="" size="50" /></span>
+
+      <input type="button" id="scramble" value="Scramble" />
+      <input type="button" id="reset" value="Reset" />
+      <input type="button" id="config-toggle" value="Config" />
+      <select id="actions">
+        <option value="">Actions</option>
+        <option value="summary">Summary</option>
+        <option value="ksolve">KSolve</option>
+        <option value="ss">Schreier-Sims</option>
+        <option value="canon">Canon Seq</option>
+        <option value="gap">GAP</option>
+        <option value="mathematica">Mathematica</option>
+        <option value="svg">SVG</option>
+        <option value="screenshot">Screenshot (front)</option>
+        <!-- <option value="screenshot-back">Screenshot (back)</option> -->
+        <!-- TODO -->
+      </select>
+      <select id="move-input">
+        <option value="">Input</option>
+        <option value="bluetooth">Bluetooth</option>
+        <option value="keyboard">Keyboard</option>
+      </select>
+      <a href="./help.html" target="_blank"><input type="button" id="help" value="Help" /></a>
+      <span id="main-config" hidden>
+        <label for="visualization-3D"><input type="checkbox" checked id="visualization-3D" />3D</label>
+        <label for="back-view-side-by-side"><input type="checkbox" checked id="back-view-side-by-side" />Side
+          by Side</label>
+        <label for="foundation-display-opaque"><input type="checkbox" id="foundation-display-opaque" checked />Show
+          Foundation</label>
+        <label for="hint-facelets-floating"><input type="checkbox" id="hint-facelets-floating" />Hint
+          Stickers</label>
+        <label for="tempo"><input type="range" id="tempo-scale" min="0.1" max="6" step="0.1" value="1" />Tempo:</label>
+        <span id="tempo-scale-display">1×</span></span>
+      <span id="move-count"></span>
+    </div>
+  </div>
+  <div id="twisty-wrapper">
+    <div id="color-net" hidden></div>
+  </div>
+  <side-panel>
+    <panel-selector>
+      <button data-tab-id="editor">Edit Alg</button>
+      <button data-tab-id="puzzle-cuts">Puzzle Cuts</button>
+      <button data-tab-id="color-picker">Colors</button>
+      <button data-tab-id="twsearch-solve">Solver</button>
+    </panel-selector>
+    <panel-tabs>
+      <twisty-alg-editor class="algarea" id="editor"></twisty-alg-editor>
+      <twisty-puzzle-description-input id="puzzle-cuts" hidden>
+        <select id="puzzle-shape">
+          <option value="c" selected>■ Cube</option>
+          <option value="t">▲ Tetrahedron</option>
+          <option value="o">▼ Octahedron</option>
+          <option value="d">⬟ Dodecahedron</option>
+          <option value="i">▼ Icosahedron</option>
+        </select>
+        <h2>Face cuts</h2>
+        <section id="f-cuts">
+          <button class="add inputs-go-before-here">➕ Add face cut</button>
+        </section>
+        <h2>Vertex cuts</h2>
+        <section id="v-cuts">
+          <button class="add inputs-go-before-here">➕ Add vertex cut</button>
+        </section>
+        <h2>Edge cuts</h2>
+        <section id="e-cuts">
+          <button class="add inputs-go-before-here">➕ Add edge cut</button>
+        </section>
+      </twisty-puzzle-description-input>
+      <div id="color-picker" hidden>
+        <p>Paint stickers on the net to set a position: pick a color, then click or drag.
+          Right-click a sticker to pick up its color.  Whenever the painted position is
+          valid, it becomes the position.</p>
+        <div id="color-palette"></div>
+        <div class="twsearch-row">
+          <button id="color-from-position">From current position</button>
+          <button id="color-solved">Solved</button>
+          <button id="color-clear">Clear</button>
+        </div>
+        <div id="color-moveset"></div>
+        <div id="color-status"></div>
+        <ul id="color-problems"></ul>
+      </div>
+      <div id="twsearch-solve" hidden>
+        <p>Solves the position with twsearch, natively through the
+          twsearch bridge if it is running on this computer, otherwise in the browser.</p>
+        <div class="twsearch-row">
+          <button id="twsearch-solve-button">Solve</button>
+          <button id="twsearch-cancel-button" disabled>Cancel</button>
+          <button id="twsearch-export-button">Export...</button>
+          <button id="twsearch-help-button">Help...</button>
+          <select id="twsearch-channel">
+            <option value="auto" selected>Auto</option>
+            <option value="bridge">Native bridge</option>
+            <option value="wasm">WebAssembly</option>
+          </select>
+        </div>
+        <label class="twsearch-row">Move set <input type="text" id="twsearch-moves"
+            placeholder="default (e.g. U,R,F or u,r,f)" /></label>
+        <label class="twsearch-row">Options <input type="text" id="twsearch-args" value="-v2" /></label>
+        <div id="twsearch-status"></div>
+        <ol id="twsearch-solutions"></ol>
+        <details>
+          <summary>twsearch output</summary>
+          <pre id="twsearch-log"></pre>
+        </details>
+        <dialog id="twsearch-help-dialog">
+          <h2>Solving with twsearch</h2>
+          <div class="twsearch-row"><button id="twsearch-help-close">Close</button></div>
+          <div id="twsearch-help-body">
+            <p>The solver hands twsearch the current position to solve.  This can
+              be the position at the end of an algorithm from the algorithm
+              box, or the position set in the <b>Colors</b> tab, or the position set
+              by the <b>Scramble</b> button.  The search for an optimal solution will
+              proceed; if it completes, the solution(s) will appear as
+              button(s) you can click to apply that solution.  Some solutions to
+              certain positions on certain puzzles may appear instantly; others
+              may take a very long time, so there is a <b>Cancel</b> button.</p>
+
+            <h3>Move set</h3>
+            <p>Comma separated move names, as this puzzle names them:
+              <code>U,R,F</code>, or <code>u,r,f</code> for a different set of
+              moves.  No spaces.  Leave it blank for the puzzle's own moves.  The
+              move set decides the puzzle twsearch is given, so it also decides
+              which positions count as solvable, in the Colors tab as well.  It is
+              kept per puzzle while the page is open, and is not part of the URL.
+              The move set also limits the <b>Scramble</b> button: it scrambles with
+              those moves only, so the solver can always solve the result.</p>
+
+            <h3>Options</h3>
+            <p>Anything below can go in the Options field, separated by spaces.
+              <code>--checkbeforesolve</code> is always added, so an unsolvable
+              position is refused instead of searched forever.  The most useful
+              options in general are -c, -M, -q, --distinguishall, and the various
+              options starting with --no or --omit.</p>
+            <dl id="twsearch-help-options"></dl>
+            <p>twsearch's other commands (<code>-g</code>, <code>--schreiersims</code>
+              and the rest) are not available here; they do not solve a position, and
+              the browser build leaves most of them out.</p>
+
+              <h3>The server</h3>
+              <p>By default the twsearch code is run in the browser through WebAssembly.
+              This is not as fast as a native build, and it does not use threads
+              and can only use up to 4GB of RAM.  It also cannot write pruning
+              tables to disk.  For more speed and deeper searches, you can run a
+              native server (see below) or use the <b>Export...</b> button to
+              download a file to run locally from the command line.  This file
+              contains both the puzzle definition and the puzzle state to solve.</p>
+
+            <h3>Running twsearch natively</h3>
+            <p>For bigger searches (such as a random 3x3x3 position), run twsearch on your
+              own machine.  The solver finds it automatically and shows
+              <b>native (twsearch bridge)</b>.  Nothing leaves your machine.</p>
+            <p>On a Mac, in Terminal:</p>
+            <pre id="twsearch-help-mac"></pre>
+            <p>On Windows, in PowerShell or Command Prompt:</p>
+            <pre id="twsearch-help-windows"></pre>
+            <p>Leave it running, and then <b>open <a id="twsearch-help-served"
+              href="http://127.0.0.1:2023/">http://127.0.0.1:2023/</a></b>: twsearch
+              answers with this page, fetched from this site and kept up to date, and
+              searches for it.  Browsers no longer let a page on the web reach a
+              program on your own machine, so a page from twsearch itself is the way
+              to have one.</p>
+            <p>The first search on a puzzle builds a pruning table (minutes for a
+              3x3x3); later ones take seconds.  <code>-M 16384</code> gives it 16GB.
+              Stop it with Ctrl-C.  <code>--port</code> puts it somewhere other than
+              2023, and the page it serves follows it there.</p>
+            <p>On Linux, or to build it yourself: <code>git clone
+              https://github.com/rokicki/twsearch</code>, then <code>make build</code>
+              (needs a C++ compiler).</p>
+            <p>The -M option is important, as is the --writeprunetables option; you can
+              give both of these either to a command line twsearch to run an exported puzzle
+              or to the server twsearch.  The memory size provided to the -M option should be
+              less than the physical memory of your machine (in megabytes) to allow memory
+              for the operating system or other applications; choosing half the physical memory
+              is a good value to start with.  If you write pruning tables, note that every
+              different move set or puzzle writes a distinct pruning table and these can fill
+              up your disk if you don't have much space.  The twsearch log on the <b>Solver</b> pane
+              will tell you precisely where these files are stored if you should need to clean
+              them up.
+            </p>
+          </div>
+        </dialog>
+        <dialog id="twsearch-export-dialog">
+          <h2>Run this search with twsearch</h2>
+          <p>This file holds the puzzle and the position to solve.  Save it, then run:</p>
+          <pre id="twsearch-export-command"></pre>
+          <div class="twsearch-row">
+            <button id="twsearch-export-copy">Copy file</button>
+            <button id="twsearch-export-download">Save file</button>
+            <button id="twsearch-export-close">Close</button>
+            <span id="twsearch-export-note"></span>
+          </div>
+          <textarea id="twsearch-export-text" readonly spellcheck="false"></textarea>
+        </dialog>
+      </div>
+    </panel-tabs>
+  </side-panel>

@@ -60,11 +60,8 @@ export function windowsCommands(): string {
   ].join("\n");
 }
 
-export function originOption(origin: string): string {
-  // A page opened from a file has no origin that can be allowed.
-  const allowed = /^https?:\/\//.test(origin) ? origin : "https://the.site";
-  return `--allow-origin ${allowed}`;
-}
+/** Where a twsearch started as above serves its page. */
+export const SERVED_AT = "http://127.0.0.1:2023/";
 
 /** Fills the dialog's option list. */
 export function renderHelpOptions(list: HTMLElement): void {

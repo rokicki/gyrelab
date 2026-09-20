@@ -33,6 +33,15 @@
 </IfModule>
 
 <IfModule mod_headers.c>
+    # The page may be served from somewhere else entirely: twsearch answers
+    # with a few lines that fetch the app from here, so that it shares an
+    # origin with the searches it asks for.  Fonts are fetched in CORS mode
+    # whatever the page is, so they need saying so; the rest is public
+    # anyway.
+    <FilesMatch "\.(woff2?|js|css|png|ico|html)$">
+        Header set Access-Control-Allow-Origin "*"
+    </FilesMatch>
+
     # Files under assets/ have a hash in the name, so a change gives a new
     # name and these can be kept for a year.
     <FilesMatch "-[A-Za-z0-9]{8}\.(woff2?|png|ico|css|js)$">

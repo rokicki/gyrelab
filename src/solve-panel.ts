@@ -5,7 +5,7 @@ import {
   BridgeChannel,
   bridgeAvailable,
   localNetworkPermission,
-  LOCAL_NETWORK_REFUSED,
+  nativeUnreachableMessage,
   type TwsearchChannel,
   type TwsearchEvent,
   WasmChannel,
@@ -13,7 +13,6 @@ import {
 import { getMoveSetText, moveSetEvents, setMoveSetText } from "./move-set";
 import {
   macCommands,
-  originOption,
   renderHelpOptions,
   windowsCommands,
 } from "./solver-help";
@@ -106,9 +105,6 @@ export class TwsearchSolvePanel {
     renderHelpOptions(element("twsearch-help-options"));
     element("twsearch-help-mac").textContent = macCommands();
     element("twsearch-help-windows").textContent = windowsCommands();
-    element("twsearch-help-bridge-origin").textContent = originOption(
-      globalThis.location.origin,
-    );
     element<HTMLButtonElement>("twsearch-help-button").addEventListener(
       "click",
       () => helpDialog.showModal(),
@@ -224,8 +220,8 @@ export class TwsearchSolvePanel {
         }
         // Searching here is the right answer when no twsearch is running,
         // but not when one is and the browser will not let us reach it.
-        if ((await localNetworkPermission()) === "denied") {
-          this.logElem.append(`${LOCAL_NETWORK_REFUSED}\n`);
+        if ((await localNetworkPermission()) !== "granted") {
+          this.logElem.append(`${await nativeUnreachableMessage()}\n`);
         }
         return this.wasm;
       }

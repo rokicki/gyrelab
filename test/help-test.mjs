@@ -44,9 +44,9 @@ check(/--serve/.test(mac), "Mac: starts it serving");
 const windows = await page.textContent("#twsearch-help-windows");
 check(/curl\.exe .*releases\/latest\/download\/twsearch-windows-x64\.exe/.test(windows), "Windows: downloads the latest release", windows.split("\n")[0]);
 check(/twsearch\.exe --serve/.test(windows), "Windows: starts it serving");
-const originLine = await page.textContent("#twsearch-help-bridge-origin");
-const origin = new URL(base).origin;
-check(originLine.trim() === `--allow-origin ${origin}`, "names this page's origin for --allow-origin", originLine);
+const served = await page.textContent("#twsearch-help-served");
+check(/127\.0\.0\.1:2023/.test(served ?? ""), "says where twsearch serves the page", (served ?? "").trim());
+check(/page it serves there is this one|answers with this page/.test(body), "says the page comes from twsearch itself");
 check(/make build/.test(body), "says how to build it yourself");
 check(/native \(twsearch bridge\)/.test(body), "says what the status looks like when it is in use");
 
