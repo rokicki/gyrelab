@@ -11,6 +11,7 @@ import {
   type StickerModel,
   solvedColors,
 } from "./sticker-colors";
+import { rememberUnknownPlaces } from "./unknown-places";
 
 /** A comparable form of a painting, for noticing changes. */
 function serializeColors(colors: Colors): string {
@@ -309,6 +310,8 @@ export class ColorPainter {
       }
     }
     if (problems.length === 0 && reading.pattern) {
+      // What was left blank travels with the position, for the Solver.
+      rememberUnknownPlaces(reading.pattern, reading.unknown);
       if (!this.#picked) {
         this.statusElem.textContent = "This is the current position.";
         return;

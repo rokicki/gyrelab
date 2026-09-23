@@ -17,10 +17,13 @@ import {
   windowsCommands,
 } from "./solver-help";
 import {
+  ksolveWithUnknowns,
   patternToScrambleState,
   setOmissionFromArgs,
   TwsearchStateError,
+  unknownsForTwsearch,
 } from "./twsearch-state";
+import { unknownPlacesFor } from "./unknown-places";
 
 // Default pruning table memory for WebAssembly, in MB, when the options do
 // not give -M.  (The bridge applies its own cap.)
@@ -60,6 +63,16 @@ function element<T extends HTMLElement>(id: string): T {
 }
 
 /** The "Solver" tab: solves the position with twsearch. */
+/** What to say about places nobody painted, before a search that may run. */
+function blankWarning(blank: Map<string, Set<number>>): string {
+  const n = [...blank.values()].reduce((sum, places) => sum + places.size, 0);
+  return (
+    `${n} piece${n === 1 ? " was" : "s were"} left unpainted, so anything may ` +
+    "end up there.  Whether this position can be solved cannot be told in " +
+    "advance, and the search may run for a long time."
+  );
+}
+
 export class TwsearchSolvePanel {
   solveButton = element<HTMLButtonElement>("twsearch-solve-button");
   cancelButton = element<HTMLButtonElement>("twsearch-cancel-button");
@@ -158,7 +171,7 @@ export class TwsearchSolvePanel {
   async showExport(): Promise<void> {
     const args = this.searchArgs();
     this.exportNote.textContent = "";
-    let input: { tws: string; scramble: string };
+    let input: { tws: string; scramble: string; warning?: string };
     try {
       input = await this.input(args);
     } catch (e) {
@@ -233,7 +246,9 @@ export class TwsearchSolvePanel {
    * setup from the Scramble button or a setup alg).  The displayed state is
    * mapped onto twsearch's puzzle (see twsearch-state.ts).
    */
-  async input(args: string[]): Promise<{ tws: string; scramble: string }> {
+  async input(
+    args: string[],
+  ): Promise<{ tws: string; scramble: string; warning?: string }> {
     const model = this.app.twistyPlayer.experimentalModel;
     const [start, algWithIssues] = await Promise.all([
       model.anchorTransformation.get(),
@@ -256,7 +271,13 @@ export class TwsearchSolvePanel {
     // --checkbeforesolve decides exactly; our check, which can only look at
     // the orbits the display tells apart, would be guessing.
     const distinguishAll = args.includes("--distinguishall");
-    const reach = distinguishAll ? "reachable" : checker.check(pattern);
+    // Places the Colors tab was left blank about: anything may end up in
+    // them.  Whether such a position can be solved is not a question our
+    // check can answer (it knows one arrangement of the blanks, and the
+    // search may use any), so it is not asked; the search finds out.
+    const blank = unknownPlacesFor(pattern);
+    const reach =
+      distinguishAll || blank ? "reachable" : checker.check(pattern);
     if (reach === "rotated") {
       throw new TwsearchStateError(
         moveSet.length > 0
@@ -271,15 +292,21 @@ export class TwsearchSolvePanel {
           : "This position can't be reached with the puzzle's moves.",
       );
     }
+    const unknown = blank
+      ? unknownsForTwsearch(pattern, tws, blank)
+      : new Map<string, Set<number>>();
+    const puzzle = ksolveWithUnknowns(tws, unknown);
     return {
-      tws,
+      tws: puzzle,
       scramble: patternToScrambleState(
         pattern,
-        tws,
+        puzzle,
         undefined,
         setOmissionFromArgs(args),
         distinguishAll,
+        unknown,
       ),
+      warning: blank ? blankWarning(blank) : undefined,
     };
   }
 
@@ -294,7 +321,7 @@ export class TwsearchSolvePanel {
     // fresh: a browser only offers to let a page reach this computer while
     // that is true, and remembers a refusal (see twsearch-channel.ts).
     const channel = await this.chooseChannel();
-    let input: { tws: string; scramble: string };
+    let input: { tws: string; scramble: string; warning?: string };
     try {
       input = await this.input(args);
     } catch (e) {
@@ -302,6 +329,9 @@ export class TwsearchSolvePanel {
         e instanceof TwsearchStateError ? e.message : `Error: ${e}`,
       );
       return;
+    }
+    if (input.warning) {
+      this.logElem.append(`${input.warning}\n`);
     }
     if (channel === this.wasm && !args.includes("-M")) {
       args.push("-M", String(WASM_DEFAULT_MEGABYTES));
