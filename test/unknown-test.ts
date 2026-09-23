@@ -9,8 +9,9 @@ import { join } from "node:path";
 import { KPattern, KPuzzle } from "cubing/kpuzzle";
 import { getPG3DNamedPuzzles, getPuzzleGeometryByDesc } from "cubing/puzzle-geometry";
 import { ksolveWithUnknowns, patternToScrambleState, twsearchKsolve, unknownsForTwsearch, type Unknowns } from "../src/twsearch-state";
-import { buildStickerModel, colorsToPattern, patternToColors } from "../src/sticker-colors";
+import { buildStickerModel, colorsToPattern, patternToColors, solvedColors, stickerKey } from "../src/sticker-colors";
 import { ReachabilityChecker } from "../src/color-check";
+import { isRotationName } from "../src/twsearch-state";
 
 const twsearch = new URL("../twsearch/build/bin/twsearch", import.meta.url).pathname;
 const dir = mkdtempSync(join(tmpdir(), "unknown-"));
@@ -130,6 +131,37 @@ for (const [name, alg, orbit, keep] of [
     "a twisted corner is still caught when every edge is blank");
   check(ignoring(["CORNERS", "EDGES", "CENTERS"]).check(bad) === "reachable",
     "and is not claimed to be caught when the corners are blank too");
+}
+
+
+// An orbit check the group check cannot make: the FTO's centers are two
+// parts of twelve places, four colors in each, and no turn takes a color
+// from one part to the other.  Schreier-Sims says nothing about them (the
+// pieces are not all distinguishable), so without this they were accepted.
+{
+  const desc = named["FTO"];
+  const pg = getPuzzleGeometryByDesc(desc, { allMoves: true, orientCenters: true, addRotations: true });
+  const kpuzzle = new KPuzzle(pg.getKPuzzleDefinition(true));
+  const model = buildStickerModel(pg, kpuzzle);
+  const names2 = Object.keys(kpuzzle.definition.moves);
+  const moves = names2.filter((n) => !isRotationName(n)).map((n) => kpuzzle.algToTransformation(n));
+  const rotations = names2.filter(isRotationName).map((n) => kpuzzle.algToTransformation(n));
+  const checker = new ReachabilityChecker(model, moves, rotations);
+  const solved = solvedColors(model);
+  const colorAt = (loc: number) => solved.get(stickerKey("CENTERS", loc, 0))!;
+  const swapped = new Map(solved);
+  swapped.set(stickerKey("CENTERS", 0, 0), colorAt(12));   // places 0 and 12
+  swapped.set(stickerKey("CENTERS", 12, 0), colorAt(0));   // are in different parts
+  const read = (colors: Map<string, string | null>) =>
+    colorsToPattern(model, colors, [...moves, ...rotations]).pattern!;
+  check(checker.check(read(swapped)) === "unreachable",
+    "FTO: a center color in a part it can never reach is refused");
+  const blanks = [3, 5, 7, 15, 17, 19];
+  const withBlanks = new Map(swapped);
+  for (const b of blanks) withBlanks.set(stickerKey("CENTERS", b, 0), null);
+  check(checker.check(read(withBlanks), new Map([["CENTERS", new Set(blanks)]])) === "unreachable",
+    "FTO: and still refused with six other centers left blank");
+  check(checker.check(read(solved)) === "reachable", "FTO: while the solved position is fine");
 }
 
 console.log(failures === 0 ? "All unknown-place checks passed." : `${failures} failure(s).`);

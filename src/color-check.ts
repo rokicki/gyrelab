@@ -48,6 +48,12 @@ export class ReachabilityChecker {
   #degree = 0;
   #moves: PermutationGroup;
   #withRotations: PermutationGroup;
+  #model: StickerModel;
+  // Which places the moves can carry a piece between, per orbit, with and
+  // without the whole puzzle being turned as well.
+  #parts = new Map<string, number[]>();
+  #partsWithRotations = new Map<string, number[]>();
+  #rotationsCanHide = true;
 
   /**
    * @param moves the transformations of the moves twsearch uses
@@ -79,7 +85,25 @@ export class ReachabilityChecker {
           }),
         ),
       );
+    this.#model = model;
+    for (const orbit of model.orbits) {
+      const ignore = omission(orbit.name);
+      if (ignore & 1) continue;
+      this.#parts.set(orbit.name, ReachabilityChecker.#partition(orbit, moves));
+      this.#partsWithRotations.set(
+        orbit.name,
+        ReachabilityChecker.#partition(orbit, [...moves, ...rotations]),
+      );
+    }
     const movePerms = moves.map(fromTransformation);
+    // Could a whole-puzzle rotation pass unnoticed by the orbits
+    // Schreier-Sims looks at?  On most puzzles it could not: turning the
+    // whole thing moves the corners.  Where that holds, a position whose
+    // corners need no rotation cannot be explained by one.
+    const identityPerm = [...Array(this.#degree).keys()];
+    this.#rotationsCanHide = rotations
+      .map(fromTransformation)
+      .some((perm) => perm.every((v, i) => v === identityPerm[i]));
     this.#moves = new PermutationGroup(movePerms, this.#degree);
     this.#withRotations = new PermutationGroup(
       [...movePerms, ...rotations.map(fromTransformation)],
@@ -92,7 +116,78 @@ export class ReachabilityChecker {
     return this.#layouts.map((l) => l.orbit);
   }
 
-  check(pattern: KPattern): Reachability {
+  /**
+   *   Where a move can take a place, as a partition of an orbit's places.
+   *   A piece never leaves the part it starts in, so the kinds of piece in
+   *   each part are fixed however the puzzle is turned.  This is the check
+   *   for orbits Schreier-Sims will not look at, whose pieces are not all
+   *   distinguishable: an FTO's centers are two parts of twelve places,
+   *   four colors in each, and no turning takes a color from one part to
+   *   the other.
+   */
+  static #partition(
+    orbit: { name: string; numPieces: number },
+    transformations: KTransformation[],
+  ): number[] {
+    const part = [...Array(orbit.numPieces).keys()];
+    const find = (a: number): number => (part[a] === a ? a : (part[a] = find(part[a])));
+    for (const t of transformations) {
+      const perm = t.transformationData[orbit.name]?.permutation;
+      if (!perm) continue;
+      for (let i = 0; i < orbit.numPieces; i++) part[find(i)] = find(perm[i]);
+    }
+    return part.map((_, i) => find(i));
+  }
+
+  /**
+   *   Are the kinds of piece in each part of each orbit ones that could be
+   *   there?  A place left blank says nothing, so a part may come up short;
+   *   it may never hold more of a kind than it holds when solved.
+   */
+  #partsAgree(pattern: KPattern, parts: Map<string, number[]>, blank?: Map<string, Set<number>>): boolean {
+    for (const orbit of this.#model.orbits) {
+      const part = parts.get(orbit.name);
+      if (!part) continue;
+      const here = new Map<string, number>();
+      const solved = new Map<string, number>();
+      const skip = blank?.get(orbit.name);
+      const o = pattern.patternData[orbit.name];
+      for (let i = 0; i < orbit.numPieces; i++) {
+        solved.set(`${part[i]}|${orbit.kind[i]}`, (solved.get(`${part[i]}|${orbit.kind[i]}`) ?? 0) + 1);
+        if (skip?.has(i)) continue;
+        const k = `${part[i]}|${orbit.kind[o.pieces[i]]}`;
+        here.set(k, (here.get(k) ?? 0) + 1);
+      }
+      for (const [k, n] of here) {
+        if (n > (solved.get(k) ?? 0)) return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   *   Each test can only rule things out: Schreier-Sims over the orbits
+   *   whose pieces are all distinguishable, and the kinds of piece in each
+   *   part of every orbit.  A position is reachable only if both say so.
+   */
+  check(pattern: KPattern, blank?: Map<string, Set<number>>): Reachability {
+    if (!this.#partsAgree(pattern, this.#partsWithRotations, blank)) {
+      return "unreachable";
+    }
+    const parts = this.#partsAgree(pattern, this.#parts, blank);
+    const group = this.#groupVerdict(pattern);
+    if (group === "unreachable") return "unreachable";
+    if (parts && group === "reachable") return "reachable";
+    if (!parts && group === "reachable" && !this.#rotationsCanHide) {
+      // The orbits that can be judged exactly say no rotation was used, and
+      // no rotation could have gone unnoticed by them, so the piece in the
+      // wrong part of its orbit has no explanation.
+      return "unreachable";
+    }
+    return "rotated";
+  }
+
+  #groupVerdict(pattern: KPattern): Reachability {
     if (this.#degree === 0) return "reachable";
     const p = toPerm(
       this.#layouts,
