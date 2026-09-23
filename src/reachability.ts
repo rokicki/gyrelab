@@ -5,6 +5,7 @@ import { currentMoveSet } from "./move-set";
 import { buildStickerModel, type StickerModel } from "./sticker-colors";
 import {
   ksolveMoveNames,
+  type SetOmission,
   setOmissionFromArgs,
   setOmissionKey,
   TwsearchStateError,
@@ -49,9 +50,25 @@ export function stickerModel(app: TwizzleExplorerApp): Promise<StickerModel> {
  * @param twsearchArgs twsearch's options, for what they tell it to ignore
  *   (--nocorners, --omit, ...); the Colors tab passes none.
  */
+/**
+ *   What can still be checked when some places were left unpainted.  An
+ *   orbit with no blank place is checked as usual.  An orbit with exactly
+ *   one is checked for where its pieces are but not for how they are
+ *   turned: the piece in the blank place is the one nobody else is using,
+ *   so its place is known, while its orientation is not.  An orbit with
+ *   more than one blank place is left alone.
+ */
+function blankOmission(blank?: Map<string, Set<number>>): SetOmission {
+  return (name: string) => {
+    const places = blank?.get(name)?.size ?? 0;
+    return places === 0 ? 0 : places === 1 ? 2 : 3;
+  };
+}
+
 export function puzzleChecks(
   app: TwizzleExplorerApp,
   twsearchArgs: string[] = [],
+  blank?: Map<string, Set<number>>,
 ): Promise<PuzzleChecks> {
   const description = app.configUI.descInput.value;
   let moveSet: string[];
@@ -60,7 +77,12 @@ export function puzzleChecks(
   } catch (e) {
     return Promise.reject(e);
   }
-  const key = JSON.stringify([description, moveSet, setOmissionKey(twsearchArgs)]);
+  const key = JSON.stringify([
+    description,
+    moveSet,
+    setOmissionKey(twsearchArgs),
+    blank ? [...blank].map(([o, p]) => [o, p.size]).sort() : null,
+  ]);
   if (!cached || cachedKey !== key) {
     cachedKey = key;
     cached = (async () => {
@@ -91,11 +113,13 @@ export function puzzleChecks(
         }
       });
       const rotations = rotationTransformations(pg, kpuzzle);
+      const fromArgs = setOmissionFromArgs(twsearchArgs);
+      const fromBlanks = blankOmission(blank);
       const checker = new ReachabilityChecker(
         model,
         moves,
         rotations,
-        setOmissionFromArgs(twsearchArgs),
+        (name) => fromArgs(name) | fromBlanks(name),
       );
       return { description, moveSet, tws, model, checker, generators: [...moves, ...rotations] };
     })();

@@ -1,5 +1,6 @@
 import { Alg } from "cubing/alg";
 import { puzzleChecks } from "./reachability";
+import type { ReachabilityChecker } from "./color-check";
 import type { TwizzleExplorerApp } from "./app";
 import {
   BridgeChannel,
@@ -63,13 +64,28 @@ function element<T extends HTMLElement>(id: string): T {
 }
 
 /** The "Solver" tab: solves the position with twsearch. */
-/** What to say about places nobody painted, before a search that may run. */
-function blankWarning(blank: Map<string, Set<number>>): string {
+/**
+ *   What to say about places nobody painted, before a search that may run.
+ *   Some of the position was still checked, and saying which part was not
+ *   is the difference between a warning and a shrug.
+ */
+function blankWarning(
+  blank: Map<string, Set<number>>,
+  checker: ReachabilityChecker,
+): string {
   const n = [...blank.values()].reduce((sum, places) => sum + places.size, 0);
+  const short = [...blank]
+    .filter(([, places]) => places.size > 1)
+    .map(([orbit]) => orbit);
+  const checked = checker.orbits;
+  const said = `${n} piece${n === 1 ? " was" : "s were"} left unpainted, so anything may end up there.`;
+  if (short.length === 0) {
+    return `${said}  Everything else was checked and can be reached.`;
+  }
   return (
-    `${n} piece${n === 1 ? " was" : "s were"} left unpainted, so anything may ` +
-    "end up there.  Whether this position can be solved cannot be told in " +
-    "advance, and the search may run for a long time."
+    `${said}  ${short.join(", ")} could not be checked for reachability` +
+    (checked.length > 0 ? ` (${checked.join(", ")} could)` : "") +
+    ", so the search may run for a long time."
   );
 }
 
@@ -266,18 +282,17 @@ export class TwsearchSolvePanel {
     // are all distinguishable.
     // Options that tell twsearch to ignore sets (--nocorners, --omit, ...)
     // apply to these checks too.
-    const { checker, moveSet, tws } = await puzzleChecks(this.app, args);
+    // Places the Colors tab was left blank about: anything may end up in
+    // them.  What can still be checked is checked (see puzzleChecks): an
+    // orbit with nothing blank in it answers for itself, and an orbit with
+    // one blank place still answers for where its pieces are.
+    const blank = unknownPlacesFor(pattern);
+    const { checker, moveSet, tws } = await puzzleChecks(this.app, args, blank ?? undefined);
     // With --distinguishall every piece is distinct, so twsearch's own
     // --checkbeforesolve decides exactly; our check, which can only look at
     // the orbits the display tells apart, would be guessing.
     const distinguishAll = args.includes("--distinguishall");
-    // Places the Colors tab was left blank about: anything may end up in
-    // them.  Whether such a position can be solved is not a question our
-    // check can answer (it knows one arrangement of the blanks, and the
-    // search may use any), so it is not asked; the search finds out.
-    const blank = unknownPlacesFor(pattern);
-    const reach =
-      distinguishAll || blank ? "reachable" : checker.check(pattern);
+    const reach = distinguishAll ? "reachable" : checker.check(pattern);
     if (reach === "rotated") {
       throw new TwsearchStateError(
         moveSet.length > 0
@@ -306,7 +321,7 @@ export class TwsearchSolvePanel {
         distinguishAll,
         unknown,
       ),
-      warning: blank ? blankWarning(blank) : undefined,
+      warning: blank ? blankWarning(blank, checker) : undefined,
     };
   }
 

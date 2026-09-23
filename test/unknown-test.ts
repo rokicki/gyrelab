@@ -6,10 +6,11 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { KPuzzle } from "cubing/kpuzzle";
+import { KPattern, KPuzzle } from "cubing/kpuzzle";
 import { getPG3DNamedPuzzles, getPuzzleGeometryByDesc } from "cubing/puzzle-geometry";
 import { ksolveWithUnknowns, patternToScrambleState, twsearchKsolve, unknownsForTwsearch, type Unknowns } from "../src/twsearch-state";
 import { buildStickerModel, colorsToPattern, patternToColors } from "../src/sticker-colors";
+import { ReachabilityChecker } from "../src/color-check";
 
 const twsearch = new URL("../twsearch/build/bin/twsearch", import.meta.url).pathname;
 const dir = mkdtempSync(join(tmpdir(), "unknown-"));
@@ -104,5 +105,32 @@ for (const [name, alg, orbit, keep] of [
     && corners.orientation.every((o) => o === 0);
   check(cornersOk, "4x4x4: and the corners really are solved");
 }
+
+
+// Blanks do not blind the check.  A 3x3x3 with every edge left blank and
+// one corner twisted is still impossible, and the corners say so on their
+// own; with the corners blank instead, nothing can be said about them.
+{
+  const desc = named["3x3x3"];
+  const pg = getPuzzleGeometryByDesc(desc, { allMoves: true, orientCenters: true, addRotations: true });
+  const kpuzzle = new KPuzzle(pg.getKPuzzleDefinition(true));
+  const model = buildStickerModel(pg, kpuzzle);
+  const names = Object.keys(kpuzzle.definition.moves);
+  const transformations = names.map((n) => kpuzzle.algToTransformation(n));
+  const rotations = names.filter((n) => /v$|^[xyz]/.test(n)).map((n) => kpuzzle.algToTransformation(n));
+
+  const twisted = kpuzzle.defaultPattern();
+  const data = structuredClone(twisted.patternData);
+  data.CORNERS.orientation[0] = (data.CORNERS.orientation[0] + 1) % 3;
+  const bad = new KPattern(kpuzzle, data);
+
+  const ignoring = (orbits: string[]) =>
+    new ReachabilityChecker(model, transformations, rotations, (name) => (orbits.includes(name) ? 3 : 0));
+  check(ignoring(["EDGES", "CENTERS"]).check(bad) === "unreachable",
+    "a twisted corner is still caught when every edge is blank");
+  check(ignoring(["CORNERS", "EDGES", "CENTERS"]).check(bad) === "reachable",
+    "and is not claimed to be caught when the corners are blank too");
+}
+
 console.log(failures === 0 ? "All unknown-place checks passed." : `${failures} failure(s).`);
 process.exit(failures === 0 ? 0 : 1);
