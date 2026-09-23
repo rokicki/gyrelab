@@ -129,6 +129,7 @@ export class TwizzleExplorerApp {
   setPuzzleName(puzzleName: string): void {
     const descString = getPuzzleDescriptionString(puzzleName);
     this.configUI.descInput.value = descString;
+    this.clearStickeringMask();
     this.twistyPlayer.experimentalModel.setupTransformation.set(null);
     setAlgParamEnabled(true);
     this.twistyPlayer.experimentalPuzzleDescription = descString;
@@ -137,6 +138,7 @@ export class TwizzleExplorerApp {
 
   setPuzzleDescription(descString: string): void {
     this.configUI.puzzleNameSelect.value = "";
+    this.clearStickeringMask();
     this.twistyPlayer.experimentalModel.setupTransformation.set(null);
     setAlgParamEnabled(true);
     this.twistyPlayer.experimentalPuzzleDescription = descString;
@@ -145,6 +147,19 @@ export class TwizzleExplorerApp {
       puzzle: "",
       "puzzle-description": descString,
     });
+  }
+
+  /**
+   *   Gray pieces belong to the puzzle they were painted on: a mask left
+   *   over from another puzzle names orbits and pieces this one does not
+   *   have, and the player throws when it looks for them.
+   */
+  clearStickeringMask(): void {
+    // null is the player's own "no mask"; an empty one means every orbit is
+    // missing, which it reads as a mask it cannot find anything in.
+    this.twistyPlayer.experimentalModel.twistySceneModel.stickeringMaskRequest.set(
+      null,
+    );
   }
 
   showText(text: string): void {

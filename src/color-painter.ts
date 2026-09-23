@@ -1,4 +1,4 @@
-import { KTransformation, type KTransformationData } from "cubing/kpuzzle";
+import { type KPattern, KTransformation, type KTransformationData } from "cubing/kpuzzle";
 import type { TwizzleExplorerApp } from "./app";
 import { getMoveSetText, moveSetEvents } from "./move-set";
 import { type PuzzleChecks, puzzleChecks, stickerModel } from "./reachability";
@@ -281,8 +281,16 @@ export class ColorPainter {
     const reading = colorsToPattern(puzzle.model, this.colors, checks?.generators);
     problems.push(...reading.problems);
     if (reading.pattern && checks) {
-      const { checker, moveSet } = checks;
-      const reach = checker.check(reading.pattern);
+      const { moveSet } = checks;
+      // Blank places change what can be checked at all, so the checker is
+      // asked for with them (see puzzleChecks), and told about them.
+      const blank = [...reading.unknown.values()].some((p) => p.size > 0)
+        ? reading.unknown
+        : undefined;
+      const checker = blank
+        ? (await puzzleChecks(this.app, [], blank)).checker
+        : checks.checker;
+      const reach = checker.check(reading.pattern, blank);
       const moves = moveSet.length > 0 ? `the move set ${moveSet.join(",")}` : "the puzzle's moves";
       if (reach === "rotated") {
         problems.push({
@@ -310,8 +318,10 @@ export class ColorPainter {
       }
     }
     if (problems.length === 0 && reading.pattern) {
-      // What was left blank travels with the position, for the Solver.
+      // What was left blank travels with the position, for the Solver, and
+      // is shown in gray on the puzzle itself.
       rememberUnknownPlaces(reading.pattern, reading.unknown);
+      this.showUnknownPieces(reading.pattern, reading.unknown);
       if (!this.#picked) {
         this.statusElem.textContent = "This is the current position.";
         return;
@@ -329,6 +339,28 @@ export class ColorPainter {
     } else {
       this.statusElem.textContent = "";
     }
+  }
+
+  /**
+   *   Draws the pieces nobody asked about in gray.  The mask goes by piece
+   *   rather than by place, so the gray follows them as the puzzle turns,
+   *   which is what they are: the pieces this position says nothing about,
+   *   wherever they end up.
+   */
+  showUnknownPieces(pattern: KPattern, unknown: Map<string, Set<number>>): void {
+    const orbits: Record<string, { pieces: ({ facelets: string[] } | null)[] }> = {};
+    for (const def of pattern.kpuzzle.definition.orbits) {
+      const pieces = new Array<{ facelets: string[] } | null>(def.numPieces).fill(null);
+      for (const place of unknown.get(def.orbitName) ?? []) {
+        const piece = pattern.patternData[def.orbitName].pieces[place];
+        pieces[piece] = {
+          facelets: new Array(def.numOrientations).fill("ignored"),
+        };
+      }
+      orbits[def.orbitName] = { pieces };
+    }
+    // biome-ignore lint/suspicious/noExplicitAny: the mask type is not exported.
+    (this.app.twistyPlayer as any).experimentalStickeringMaskOrbits = { orbits };
   }
 
   /** Makes the position the Explorer's: set as the setup, alg cleared. */

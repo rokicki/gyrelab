@@ -292,7 +292,9 @@ export class TwsearchSolvePanel {
     // --checkbeforesolve decides exactly; our check, which can only look at
     // the orbits the display tells apart, would be guessing.
     const distinguishAll = args.includes("--distinguishall");
-    const reach = distinguishAll ? "reachable" : checker.check(pattern);
+    const reach = distinguishAll
+      ? "reachable"
+      : checker.check(pattern, blank ?? undefined);
     if (reach === "rotated") {
       throw new TwsearchStateError(
         moveSet.length > 0

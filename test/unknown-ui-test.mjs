@@ -49,6 +49,36 @@ const log = (await page.textContent("#twsearch-log")) ?? "";
 check(/left unpainted/.test(log), "and warns that solvability cannot be told in advance",
   (log.split("\n").find((l) => /unpainted/.test(l)) ?? "").slice(0, 70));
 
+// The pieces nobody asked about are drawn gray, by a mask that goes with
+// the pieces rather than the places.
+const mask = await page.evaluate(async () => {
+  const p = document.querySelector("twisty-player");
+  const m = await p.experimentalModel.twistySceneModel.stickeringMaskRequest.get();
+  if (!m) return null;
+  return Object.fromEntries(
+    Object.entries(m.orbits).map(([orbit, o]) => [
+      orbit,
+      o.pieces.filter((piece) => piece?.facelets?.includes("ignored")).length,
+    ]),
+  );
+});
+check(mask !== null && Object.values(mask).some((n) => n > 0),
+  "the pieces nobody asked about are marked gray", JSON.stringify(mask));
+
+// A mask belongs to the puzzle it was painted on: carrying one to another
+// puzzle names orbits it does not have, and the player throws.
+const before = failures;
+await page.evaluate(() => {
+  const s = document.querySelector("select");
+  const option = [...s.options].find((o) => o.textContent.trim() === "megaminx");
+  s.value = option.value;
+  s.dispatchEvent(new Event("change", { bubbles: true }));
+});
+await page.waitForTimeout(3000);
+await page.click('button[data-tab-id="editor"]');
+await page.waitForTimeout(1200);
+check(failures === before, "and switching puzzles does not carry the mask over");
+
 await browser.close();
 console.log(failures === 0 ? "All unpainted-sticker checks passed." : `${failures} failure(s).`);
 process.exit(failures === 0 ? 0 : 1);
