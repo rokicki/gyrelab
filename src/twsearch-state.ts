@@ -63,8 +63,12 @@ function parseKsolve(text: string): Ksolve {
       }
       const perm = lines[++i].map((t) => Number(t) - 1);
       let ori = perm.map(() => 0);
-      if (i + 1 < lines.length && /^\d/.test(lines[i + 1][0])) {
-        ori = lines[++i].map(Number);
+      // A solved state may say ? for an orientation nobody asked about
+      // (never a move: twsearch does not allow wildcards in one).  It is
+      // read as -1 and never looked at; what matters is that the row is
+      // recognized as orientations rather than taken for a set name.
+      if (i + 1 < lines.length && /^[\d?]/.test(lines[i + 1][0])) {
+        ori = lines[++i].map((t) => (t === "?" ? -1 : Number(t)));
       }
       orbits.set(set.name, { perm, ori });
     }
@@ -91,6 +95,94 @@ function parseKsolve(text: string): Ksolve {
     }
   }
   return { sets, solved, moves };
+}
+
+/**
+ *   Places nobody asked about, by twsearch set name and index within it.
+ *   Whatever ends up in them is acceptable.
+ */
+export type Unknowns = Map<string, Set<number>>;
+
+/**
+ *   The places the Colors tab left unpainted, said in twsearch's terms.
+ *   Its places are not twsearch's: the 24 centers a 4x4x4 shows are six
+ *   colors to twsearch, and the sets need not even be in the same order, so
+ *   the two are matched by how the moves move them (pairPieces).
+ */
+export function unknownsForTwsearch(
+  pattern: KPattern,
+  twsearchKsolve: string,
+  displayed: Map<string, Set<number>>,
+  transformationFor: (name: string) => KTransformation = (name) =>
+    pattern.kpuzzle.algToTransformation(name),
+): Unknowns {
+  const tw = parseKsolve(twsearchKsolve);
+  const moves = [...tw.moves.keys()].filter((m) => !isRotationName(m));
+  const pairing = pairPieces(ksolveFromKPuzzle(pattern.kpuzzle, moves, transformationFor), tw, moves);
+  const unknown: Unknowns = new Map(tw.sets.map((set) => [set.name, new Set<number>()]));
+  for (const [twKey, uiSlot] of pairing) {
+    if (displayed.get(uiSlot.set)?.has(uiSlot.index)) {
+      const [set, index] = twKey.split("#");
+      unknown.get(set)!.add(Number(index));
+    }
+  }
+  return unknown;
+}
+
+/**
+ *   The same puzzle, with the places nobody asked about made
+ *   interchangeable: one piece number shared by all of them and a wildcard
+ *   orientation, which is how the ksolve format says "any of these will do"
+ *   (twsearch/docs/architecture.md).  twsearch then solves to any position
+ *   that agrees everywhere else.
+ *
+ *   A place can only be given away as a whole.  Asking about one piece and
+ *   not another that looks exactly like it is not a question the puzzle can
+ *   answer, so that is refused rather than answered wrongly.
+ */
+export function ksolveWithUnknowns(ksolve: string, unknown: Unknowns): string {
+  if (![...unknown.values()].some((places) => places.size > 0)) {
+    return ksolve;
+  }
+  const tw = parseKsolve(ksolve);
+  const block = ["Solved"];
+  for (const set of tw.sets) {
+    const places = unknown.get(set.name) ?? new Set<number>();
+    const orbit = tw.solved.get(set.name)!;
+    if (places.size > 0) {
+      const shared = Math.max(...orbit.perm) + 1;
+      // Every place holding a piece that looks like an unasked-about one
+      // must itself be unasked-about.
+      const givenAway = new Set([...places].map((i) => orbit.perm[i]));
+      for (let i = 0; i < set.size; i++) {
+        if (!places.has(i) && givenAway.has(orbit.perm[i])) {
+          throw new TwsearchStateError(
+            `Some ${set.name} are painted and others exactly like them are not; ` +
+              "paint all of them or none",
+          );
+        }
+      }
+      block.push(
+        set.name,
+        orbit.perm.map((p, i) => (places.has(i) ? shared : p) + 1).join(" "),
+        orbit.ori.map((o, i) => (places.has(i) ? "?" : o)).join(" "),
+      );
+    } else {
+      block.push(
+        set.name,
+        orbit.perm.map((p) => p + 1).join(" "),
+        orbit.ori.join(" "),
+      );
+    }
+  }
+  block.push("End");
+  const lines = ksolve.split("\n");
+  const at = lines.findIndex((l) => l.trim() === "Solved");
+  if (at < 0) {
+    throw new TwsearchStateError("ksolve: no Solved block to give places away in");
+  }
+  const end = lines.findIndex((l, i) => i > at && l.trim() === "End");
+  return [...lines.slice(0, at), ...block, ...lines.slice(end + 1)].join("\n");
 }
 
 /**
@@ -396,6 +488,9 @@ export function patternToScrambleState(
   // so the position must name each piece by the place it belongs rather than
   // by the piece label (its color class) the solved state gives it.
   distinguishAll = false,
+  // Places nobody asked about, as given to ksolveWithUnknowns.  The piece
+  // numbers come from the rewritten solved state; the wildcards do not.
+  unknown: Unknowns = new Map(),
 ): string {
   const tw = parseKsolve(twsearchKsolve);
   const moves = [...tw.moves.keys()].filter((m) => !isRotationName(m));
@@ -415,8 +510,9 @@ export function patternToScrambleState(
     // so the scramble has to name the same pieces or its piece counts will
     // not match.
     const omitPerm = (omission(set.name) & 1) !== 0;
+    const places = unknown.get(set.name) ?? new Set<number>();
     const pieces: number[] = [];
-    const oris: number[] = [];
+    const oris: (number | string)[] = [];
     for (let index = 0; index < set.size; index++) {
       const at = pairing.get(key({ set: set.name, index }))!;
       const orbit = pattern.patternData[at.set];
@@ -437,12 +533,17 @@ export function patternToScrambleState(
             ? home.index
             : tw.solved.get(set.name)!.perm[home.index],
       );
-      oris.push(orbit.orientation[at.index] % set.mod);
+      oris.push(
+        places.has(home.index) ? "?" : orbit.orientation[at.index] % set.mod,
+      );
     }
     // Pieces no move moves must be at home, or the position can never be
     // solved with these moves (except for what twsearch is told to ignore).
     const ignore = omission(set.name);
     for (let index = 0; ignore !== 3 && index < set.size; index++) {
+      if (places.has(index)) {
+        continue;
+      }
       const unmoved = moves.every(
         (m) =>
           orbitOf(tw, m, set).perm[index] === index &&

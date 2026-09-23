@@ -182,6 +182,12 @@ export interface ColorsReading {
   /** The pattern, if every location shows a real piece and counts are right. */
   pattern: KPattern | null;
   problems: Problem[];
+  /**
+   *   Places whose stickers were all left unpainted, by orbit name.  The
+   *   pattern puts something in them, since a pattern has to, but nobody
+   *   asked what; see twsearch-state's ksolveWithUnknowns.
+   */
+  unknown: Map<string, Set<number>>;
 }
 
 /**
@@ -203,11 +209,27 @@ export function colorsToPattern(
 ): ColorsReading {
   const reach = generators ? pieceReach(model, generators) : null;
   const problems: Problem[] = [];
-  const unpainted = [...model.solved.keys()].filter((k) => !colors.get(k));
-  if (unpainted.length > 0) {
-    const count = unpainted.filter((k) => !model.duplicates.has(k)).length;
-    problems.push({ message: `${count} sticker${count === 1 ? " is" : "s are"} not painted`, stickers: unpainted });
-    return { pattern: null, problems };
+  const unknown = new Map<string, Set<number>>();
+  for (const orbit of model.orbits) {
+    const places = new Set<number>();
+    for (let loc = 0; loc < orbit.numPieces; loc++) {
+      const real = [...Array(orbit.numOrientations).keys()]
+        .map((f) => stickerKey(orbit.name, loc, f))
+        .filter((k) => model.solved.has(k) && !model.duplicates.has(k));
+      const painted = real.filter((k) => colors.get(k));
+      if (painted.length === 0) {
+        places.add(loc);
+      } else if (painted.length < real.length) {
+        problems.push({
+          message: `${orbit.name}: a piece is painted in part; paint all of it or none of it`,
+          stickers: real,
+        });
+      }
+    }
+    unknown.set(orbit.name, places);
+  }
+  if (problems.length > 0) {
+    return { pattern: null, problems, unknown };
   }
 
   // Color counts, over real stickers (not duplicated orientations).
@@ -222,15 +244,15 @@ export function colorsToPattern(
   for (const { color, name } of model.palette) {
     const have = counts.get(color) ?? 0;
     const want = solvedCounts.get(color) ?? 0;
-    if (have !== want) {
+    if (have > want) {
       problems.push({
-        message: `${name || color}: ${have} stickers, should be ${want}`,
+        message: `${name || color}: ${have} stickers, should be at most ${want}`,
         stickers: [...colors].filter(([k, c]) => c === color && model.solved.has(k)).map(([k]) => k),
       });
     }
   }
   if (problems.length > 0) {
-    return { pattern: null, problems };
+    return { pattern: null, problems, unknown };
   }
 
   const data: KPatternData = {};
@@ -247,13 +269,14 @@ export function colorsToPattern(
       [...Array(m).keys()].map((f) => model.solved.get(stickerKey(orbit.name, p, f))!);
     // For each location, the (piece, twist) pairs that fit its colors.
     const fits: { piece: number; twist: number }[][] = [];
+    const places = unknown.get(orbit.name) ?? new Set<number>();
     for (let loc = 0; loc < orbit.numPieces; loc++) {
       const here = shown(loc).join("|");
       const found: { piece: number; twist: number }[] = [];
       for (let p = 0; p < orbit.numPieces; p++) {
         const c = solvedCycle(p);
         for (let t = 0; t < m; t++) {
-          if (cycle(c, t) === here) {
+          if (places.has(loc) || cycle(c, t) === here) {
             found.push({ piece: p, twist: t });
           }
         }
@@ -273,16 +296,19 @@ export function colorsToPattern(
     for (const k of orbit.kind) wanted.set(k, (wanted.get(k) ?? 0) + 1);
     const seen = new Map<string, number[]>();
     for (let loc = 0; loc < orbit.numPieces; loc++) {
+      if (places.has(loc)) {
+        continue;
+      }
       const k = orbit.kind[fits[loc][0].piece];
       seen.set(k, [...(seen.get(k) ?? []), loc]);
     }
     for (const [k, want] of wanted) {
       const locs = seen.get(k) ?? [];
-      if (locs.length !== want) {
+      if (locs.length > want) {
         const colorsOfKind = k.split("|").filter((c, i, a) => a.indexOf(c) === i);
         const names = colorsOfKind.map((c) => model.palette.find((p) => p.color === c)?.name || c);
         problems.push({
-          message: `${orbit.name}: ${locs.length} ${names.join("-")} pieces, should be ${want}`,
+          message: `${orbit.name}: ${locs.length} ${names.join("-")} pieces, should be at most ${want}`,
           stickers: locs.flatMap((loc) => [...Array(m).keys()].map((f) => stickerKey(orbit.name, loc, f))),
         });
       }
@@ -350,7 +376,7 @@ export function colorsToPattern(
     }
   }
   if (problems.length > 0) {
-    return { pattern: null, problems };
+    return { pattern: null, problems, unknown };
   }
-  return { pattern: new KPattern(model.kpuzzle, data), problems };
+  return { pattern: new KPattern(model.kpuzzle, data), problems, unknown };
 }
