@@ -117,6 +117,9 @@
         <label class="twsearch-row">Move set <input type="text" id="twsearch-moves"
             placeholder="default (e.g. U,R,F or u,r,f)" /></label>
         <label class="twsearch-row">Options <input type="text" id="twsearch-args" value="-v2" /></label>
+        <label class="twsearch-row" id="twsearch-keepawake-row"
+          title="Browsers slow a hidden tab to about a fifth of its speed, and searching in the browser slows with it.  This plays a silent tone so the tab counts as one that is doing something, which stops that.  It is a trick, it costs battery, and it is only worth it while you are plugged in.  Keeping this window visible, even unfocused, costs nothing and works as well."
+          ><input type="checkbox" id="twsearch-keepawake" /> Disable browser throttling (plays a silent tone)</label>
         <div id="twsearch-status"></div>
         <ol id="twsearch-solutions"></ol>
         <details>
@@ -156,6 +159,29 @@
             <p>twsearch's other commands (<code>-g</code>, <code>--schreiersims</code>
               and the rest) are not available here; they do not solve a position, and
               the browser build leaves most of them out.</p>
+
+            <h3>Searching in a tab you are not looking at</h3>
+            <p>Browsers give a hidden tab a fraction of the processor, to save
+              battery.  Measured on one laptop, a search in the browser runs about
+              <b>five times slower</b> once its tab is behind another one, and it
+              speeds back up the moment the tab is visible again.  That is not
+              something this page is doing: a loop that never pauses is slowed just
+              as much, because it is the page's priority that changes, not its
+              behavior.  On a laptop with efficiency cores, the browser is moving
+              the work onto them.</p>
+            <p><b>Keeping the window visible costs nothing</b>, and it does not have
+              to be the window you are typing in: an unfocused window that is still
+              on screen runs at full speed.  Putting this window beside a terminal
+              is enough.</p>
+            <p><b>Disable browser throttling</b> is for when the tab really must be
+              hidden.  It plays a tone far too quiet to hear, which makes the
+              browser treat this as a tab that is doing something and leave its
+              speed alone.  It is a trick on the browser's battery saving, so it is
+              off unless you turn it on, and it is worth it only while you are
+              plugged in.  The tab will show the speaker mark that any tab playing
+              audio shows.</p>
+            <p>None of this applies to <b>twsearch running natively</b>, which is
+              not a browser tab at all.</p>
 
               <h3>The server</h3>
               <p>By default the twsearch code is run in the browser through WebAssembly.

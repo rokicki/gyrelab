@@ -89,11 +89,51 @@ function blankWarning(
   );
 }
 
+/*
+ *   Browsers give a hidden tab a fraction of the processor: measured on one
+ *   laptop, a search in the browser runs about five times slower once the
+ *   tab is behind another one, and that holds even for a loop that never
+ *   yields, so it is the page's own priority and not anything it does.  A
+ *   tab that is playing audio counts as one worth running, so a silent tone
+ *   stops it happening.
+ *
+ *   That is a trick, and it is the reader's to take or leave: the checkbox
+ *   is off until someone turns it on, it says what it does, and keeping the
+ *   window visible (unfocused is fine) costs nothing and works as well.
+ */
+class SilentTone {
+  #context: AudioContext | null = null;
+
+  set(on: boolean): void {
+    if (on === (this.#context !== null)) {
+      return;
+    }
+    if (!on) {
+      void this.#context?.close();
+      this.#context = null;
+      return;
+    }
+    // Started from the click that turned it on, which is the gesture a
+    // browser wants before it will play anything.
+    const context = new AudioContext();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    // Far below hearing, but not zero: silence is not "playing audio".
+    gain.gain.value = 0.0001;
+    oscillator.connect(gain).connect(context.destination);
+    oscillator.start();
+    void context.resume();
+    this.#context = context;
+  }
+}
+
 export class TwsearchSolvePanel {
   solveButton = element<HTMLButtonElement>("twsearch-solve-button");
   cancelButton = element<HTMLButtonElement>("twsearch-cancel-button");
   channelSelect = element<HTMLSelectElement>("twsearch-channel");
   argsInput = element<HTMLInputElement>("twsearch-args");
+  keepAwakeInput = element<HTMLInputElement>("twsearch-keepawake");
+  #tone = new SilentTone();
   movesInput = element<HTMLInputElement>("twsearch-moves");
   statusElem = element<HTMLDivElement>("twsearch-status");
   solutionsElem = element<HTMLOListElement>("twsearch-solutions");
@@ -129,6 +169,9 @@ export class TwsearchSolvePanel {
       }
     });
     this.cancelButton.addEventListener("click", () => this.cancel());
+    this.keepAwakeInput.addEventListener("change", () => {
+      this.#tone.set(this.keepAwakeInput.checked);
+    });
     this.exportButton.addEventListener("click", () => void this.showExport());
     const helpDialog = element<HTMLDialogElement>("twsearch-help-dialog");
     renderHelpOptions(element("twsearch-help-options"));
