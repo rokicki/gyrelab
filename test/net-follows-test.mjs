@@ -43,10 +43,24 @@ check(/this is now the position/i.test((await page.textContent("#color-status"))
   "and it is taken as the position", (await page.textContent("#color-status"))?.trim());
 check(((await page.textContent("#color-problems")) ?? "").trim() === "", "with no problems reported");
 
-// Scrambling again replaces the painting, blanks and all.
+// A blank is a sticker on a piece, so scrambling takes it along: the same
+// pieces stay blank, and show up wherever the scramble put them.
+const where = () =>
+  page.evaluate(() =>
+    [...new Set(
+      [...globalThis.app.colorPainter.colors]
+        .filter(([, c]) => !c)
+        .map(([k]) => k.match(/-l(\d+)-/)[1]),
+    )].sort().join(","),
+  );
+const placeBefore = await where();
 await page.click("#scramble");
-await page.waitForTimeout(1500);
-check((await blanks()) === 0, "and a later Scramble replaces it", `${await blanks()} blank stickers`);
+await page.waitForTimeout(1800);
+check((await blanks()) === 3, "a later Scramble keeps the blanks", `${await blanks()} blank stickers`);
+check((await where()) !== placeBefore, "and they move with their piece",
+  `place ${placeBefore} -> ${await where()}`);
+check(((await page.textContent("#color-problems")) ?? "").trim() === "",
+  "with the scrambled position still read cleanly");
 
 await browser.close();
 console.log(failures === 0 ? "All net-follows checks passed." : `${failures} failure(s).`);

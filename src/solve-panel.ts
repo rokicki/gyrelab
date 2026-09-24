@@ -24,7 +24,7 @@ import {
   TwsearchStateError,
   unknownsForTwsearch,
 } from "./twsearch-state";
-import { unknownPlacesFor } from "./unknown-places";
+import { unknownPieces, unknownPlacesIn } from "./unknown-places";
 
 // Default pruning table memory for WebAssembly, in MB, when the options do
 // not give -M.  (The bridge applies its own cap.)
@@ -286,7 +286,13 @@ export class TwsearchSolvePanel {
     // them.  What can still be checked is checked (see puzzleChecks): an
     // orbit with nothing blank in it answers for itself, and an orbit with
     // one blank place still answers for where its pieces are.
-    const blank = unknownPlacesFor(pattern);
+    // Two different sets, and they are different on purpose.  What the
+    // checks want is where the unknown pieces are *now*: every other place
+    // is known exactly.  What twsearch wants is where they *belong*, since
+    // the solved state is what says which places may hold any of them, and
+    // a piece belongs to the place with its own number.
+    const blank = unknownPlacesIn(pattern);
+    const blankHomes = unknownPieces();
     const { checker, moveSet, tws } = await puzzleChecks(this.app, args, blank ?? undefined);
     // With --distinguishall every piece is distinct, so twsearch's own
     // --checkbeforesolve decides exactly; our check, which can only look at
@@ -309,8 +315,8 @@ export class TwsearchSolvePanel {
           : "This position can't be reached with the puzzle's moves.",
       );
     }
-    const unknown = blank
-      ? unknownsForTwsearch(pattern, tws, blank)
+    const unknown = blankHomes
+      ? unknownsForTwsearch(pattern, tws, blankHomes)
       : new Map<string, Set<number>>();
     const puzzle = ksolveWithUnknowns(tws, unknown);
     return {

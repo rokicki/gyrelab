@@ -15,6 +15,7 @@ import { constructMoveCountDisplay } from "./move-count";
 import { ColorPainter } from "./color-painter";
 import { TwsearchSolvePanel } from "./solve-panel";
 import { scrambleMoves, scrambleTransformation } from "./scramble";
+import { forgetUnknownPieces } from "./unknown-places";
 import { constructTwistyPlayer } from "./twisty-player";
 import "./TwistyPuzzleDescriptionInput";
 import {
@@ -155,6 +156,7 @@ export class TwizzleExplorerApp {
    *   have, and the player throws when it looks for them.
    */
   clearStickeringMask(): void {
+    forgetUnknownPieces();
     // null is the player's own "no mask"; an empty one means every orbit is
     // missing, which it reads as a mask it cannot find anything in.
     this.twistyPlayer.experimentalModel.twistySceneModel.stickeringMaskRequest.set(

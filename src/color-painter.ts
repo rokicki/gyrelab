@@ -10,8 +10,9 @@ import {
   type Problem,
   type StickerModel,
   solvedColors,
+  stickerKey,
 } from "./sticker-colors";
-import { rememberUnknownPlaces } from "./unknown-places";
+import { rememberUnknownPieces, unknownPieces } from "./unknown-places";
 
 /** A comparable form of a painting, for noticing changes. */
 function serializeColors(colors: Colors): string {
@@ -218,17 +219,40 @@ export class ColorPainter {
    */
   async followPosition(): Promise<void> {
     const colors = await this.currentPositionColors();
-    if (colors && serializeColors(colors) !== this.#fromPosition) {
-      this.setColors(colors, false);
-      this.#fromPosition = serializeColors(colors);
+    if (!colors || serializeColors(colors) === this.#fromPosition) {
+      return;
     }
+    this.#fromPosition = serializeColors(colors);
+    // The pieces nobody asked about are still those pieces, wherever the
+    // puzzle has taken them, so blank them where they are now.
+    const blank = unknownPieces();
+    const pattern = await this.currentPattern();
+    if (blank && pattern) {
+      for (const orbit of this.puzzle!.model.orbits) {
+        const pieces = blank.get(orbit.name);
+        const o = pattern.patternData[orbit.name];
+        if (!pieces || !o) continue;
+        o.pieces.forEach((piece, place) => {
+          if (!pieces.has(piece)) return;
+          for (let f = 0; f < orbit.numOrientations; f++) {
+            colors.set(stickerKey(orbit.name, place, f), null);
+          }
+        });
+      }
+    }
+    this.setColors(colors, false);
   }
 
-  async currentPositionColors(): Promise<Colors | null> {
+  async currentPattern(): Promise<KPattern | null> {
     if (!this.puzzle) return null;
     const model = this.app.twistyPlayer.experimentalModel;
     const [start, alg] = await Promise.all([model.anchorTransformation.get(), model.puzzleAlg.get()]);
-    return patternToColors(this.puzzle.model, start.applyAlg(alg.alg).toKPattern());
+    return start.applyAlg(alg.alg).toKPattern();
+  }
+
+  async currentPositionColors(): Promise<Colors | null> {
+    const pattern = await this.currentPattern();
+    return pattern ? patternToColors(this.puzzle!.model, pattern) : null;
   }
 
   async fromCurrentPosition(): Promise<void> {
@@ -335,10 +359,16 @@ export class ColorPainter {
       }
     }
     if (problems.length === 0 && reading.pattern) {
-      // What was left blank travels with the position, for the Solver, and
-      // is shown in gray on the puzzle itself.
-      rememberUnknownPlaces(reading.pattern, reading.unknown);
-      this.showUnknownPieces(reading.pattern, reading.unknown);
+      // A sticker left unpainted is a sticker on a piece, so that is what
+      // is remembered: for the Solver, for the gray on the puzzle, and so
+      // that turning the puzzle takes the blanks along.
+      const blankPieces = new Map<string, Set<number>>();
+      for (const [orbit, places] of reading.unknown) {
+        const o = reading.pattern.patternData[orbit];
+        blankPieces.set(orbit, new Set([...places].map((place) => o.pieces[place])));
+      }
+      rememberUnknownPieces(blankPieces);
+      this.showUnknownPieces(blankPieces);
       if (!this.#picked) {
         this.statusElem.textContent = "This is the current position.";
         return;
@@ -364,12 +394,11 @@ export class ColorPainter {
    *   which is what they are: the pieces this position says nothing about,
    *   wherever they end up.
    */
-  showUnknownPieces(pattern: KPattern, unknown: Map<string, Set<number>>): void {
+  showUnknownPieces(blank: Map<string, Set<number>>): void {
     const orbits: Record<string, { pieces: ({ facelets: string[] } | null)[] }> = {};
-    for (const def of pattern.kpuzzle.definition.orbits) {
+    for (const def of this.puzzle!.model.kpuzzle.definition.orbits) {
       const pieces = new Array<{ facelets: string[] } | null>(def.numPieces).fill(null);
-      for (const place of unknown.get(def.orbitName) ?? []) {
-        const piece = pattern.patternData[def.orbitName].pieces[place];
+      for (const piece of blank.get(def.orbitName) ?? []) {
         pieces[piece] = {
           facelets: new Array(def.numOrientations).fill("ignored"),
         };

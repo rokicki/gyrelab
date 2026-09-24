@@ -1,34 +1,49 @@
 import type { KPattern } from "cubing/kpuzzle";
 
 /**
- *   Which places the Colors tab was left blank about, and the position it
- *   read them from.  Kept by the position itself, so that any other change
- *   (a move, another alg, a scramble) leaves it behind: blank places only
- *   mean anything for the position they were painted on.
+ *   The pieces nobody asked about, by orbit name.
+ *
+ *   A sticker left unpainted is a sticker on a *piece*, so that is what is
+ *   remembered: turn the puzzle and the unknown pieces go with it, showing
+ *   up wherever they now are.  A piece's home is the place with its own
+ *   number, so the same set says which places the solved state may leave
+ *   open (see twsearch-state's ksolveWithUnknowns).
  */
-let remembered: { key: string; places: Map<string, Set<number>> } | null = null;
+let remembered: Map<string, Set<number>> | null = null;
 
-function positionKey(pattern: KPattern): string {
-  return JSON.stringify(
-    Object.entries(pattern.patternData).map(([orbit, o]) => [
-      orbit,
-      o.pieces,
-      o.orientation,
-    ]),
-  );
-}
-
-export function rememberUnknownPlaces(
-  pattern: KPattern,
-  places: Map<string, Set<number>>,
+export function rememberUnknownPieces(
+  pieces: Map<string, Set<number>>,
 ): void {
-  const any = [...places.values()].some((set) => set.size > 0);
-  remembered = any ? { key: positionKey(pattern), places } : null;
+  const any = [...pieces.values()].some((set) => set.size > 0);
+  remembered = any ? new Map([...pieces].map(([o, s]) => [o, new Set(s)])) : null;
 }
 
-/** The blank places for this position, or null if it is a different one. */
-export function unknownPlacesFor(
+/** Forgotten when the puzzle changes: these numbers are that puzzle's. */
+export function forgetUnknownPieces(): void {
+  remembered = null;
+}
+
+export function unknownPieces(): Map<string, Set<number>> | null {
+  return remembered;
+}
+
+/** Where those pieces are in this position, by orbit name. */
+export function unknownPlacesIn(
   pattern: KPattern,
 ): Map<string, Set<number>> | null {
-  return remembered?.key === positionKey(pattern) ? remembered.places : null;
+  if (!remembered) {
+    return null;
+  }
+  const places = new Map<string, Set<number>>();
+  for (const [orbit, pieces] of remembered) {
+    const here = new Set<number>();
+    const o = pattern.patternData[orbit];
+    if (o) {
+      o.pieces.forEach((piece, place) => {
+        if (pieces.has(piece)) here.add(place);
+      });
+    }
+    places.set(orbit, here);
+  }
+  return places;
 }
