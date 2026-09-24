@@ -13,6 +13,9 @@ function buildPage(): void {
     return; // a page that came with its own markup
   }
   document.body.insertAdjacentHTML("afterbegin", markup);
+  // The static intro in index.html was the page until now: what a reader (or
+  // a crawler) gets before this script runs.
+  document.querySelector("#static-intro")?.remove();
 }
 
 // The static site build (script/build.mjs --site) defines this as the

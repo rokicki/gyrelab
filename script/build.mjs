@@ -125,6 +125,23 @@ if (siteIndex >= 0) {
 })();
 `,
   );
+  // For search engines: the two pages that are worth a visit.  The app is a
+  // script and says nothing until it runs, so help.html carries the words.
+  const today = new Date().toISOString().slice(0, 10);
+  const pages = ["", "help.html"];
+  writeFileSync(
+    `${out}/sitemap.xml`,
+    `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${pages
+  .map(
+    (page) =>
+      `  <url>\n    <loc>https://cube20.org/gyrelab/${page}</loc>\n    <lastmod>${today}</lastmod>\n  </url>`,
+  )
+  .join("\n")}
+</urlset>
+`,
+  );
   console.log(`Static site in ${out}`);
 } else {
   const dist = new URL("../dist/", import.meta.url).pathname;

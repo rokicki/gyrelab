@@ -3,7 +3,10 @@
 
 <head>
   <meta charset="utf8" />
-  <title>Gyrelab ᴬᴸᴾᴴᴬ</title>
+  <title>Gyrelab: a twisty puzzle workbench and optimal solver</title>
+  <meta name="description" content="Gyrelab explores twisty puzzles: build one
+    from cuts of a Platonic solid, paint a position on its net, and solve it
+    optimally with twsearch, in the browser or natively on your own machine." />
   <link rel="icon" href="./favicon.ico" />
   <link rel="apple-touch-icon" href="./app-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -13,12 +16,33 @@
     #main-config label {
       white-space: nowrap;
     }
+
+    #static-intro {
+      max-width: 34rem;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      font-family: sans-serif;
+      line-height: 1.5;
+    }
   </style>
   <link href="./index.css" rel="stylesheet" type="text/css" />
   <script src="./main.js" href="./main.ts" type="module"></script>
 </head>
 
 <body>
+  <!--
+    What the page says before the program arrives, and what a crawler sees
+    without running it.  buildPage() in main.ts takes it away.
+  -->
+  <div id="static-intro">
+    <h1>Gyrelab</h1>
+    <p>A workbench for twisty puzzles. Pick one of the named puzzles or
+      describe your own by cutting a Platonic solid, turn it, paint a position
+      on its net, and solve that position optimally with twsearch: in the
+      browser, or natively on your own machine for the searches that are too
+      big for a browser.</p>
+    <p>Loading. <a href="./help.html">The help</a> explains the rest.</p>
+  </div>
 </body>
 
 </html>
