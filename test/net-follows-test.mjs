@@ -26,6 +26,19 @@ const net = () =>
 const blanks = () =>
   page.evaluate(() => [...globalThis.app.colorPainter.colors.values()].filter((c) => !c).length);
 
+// Scramble is a position to work from, so it clears the alg as Reset does.
+await page.click('button[data-tab-id="editor"]');
+await page.evaluate(() => { document.querySelector("twisty-player").alg = "R U R' U'"; });
+await page.waitForTimeout(1000);
+await page.click("#scramble");
+await page.waitForTimeout(1500);
+const algAfter = await page.evaluate(async () =>
+  (await document.querySelector("twisty-player").experimentalModel.puzzleAlg.get()).alg.toString(),
+);
+check(algAfter === "", "Scramble clears the alg, as Reset does", JSON.stringify(algAfter));
+await page.click('button[data-tab-id="color-picker"]');
+await page.waitForTimeout(900);
+
 const solved = await net();
 await page.click("#scramble");
 await page.waitForTimeout(1500);

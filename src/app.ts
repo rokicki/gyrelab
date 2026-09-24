@@ -234,6 +234,9 @@ class ConfigUI {
     }
 
     this.scrambleButton.addEventListener("click", () => {
+      // A scramble is a position to work from, so whatever alg was there is
+      // not part of it: Reset clears the alg too.
+      this.app.twistyPlayer.alg = "";
       // Scrambled with the Solver tab's move set when it has one, and with
       // the puzzle's own moves otherwise, so that what you are given to
       // solve is something those moves can solve (see scramble.ts).
