@@ -214,6 +214,12 @@ twisty-puzzle-description-input button.add {
   flex: 1;
 }
 
+/* A checkbox is not a field to fill: it stays its own size, so its label
+   sits next to it rather than being pushed to the far side of the row. */
+.twsearch-row input[type="checkbox"] {
+  flex: none;
+}
+
 #twsearch-status {
   font-family: monospace;
   min-height: 1.5em;
