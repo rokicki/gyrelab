@@ -366,3 +366,12 @@ twisty-puzzle-description-input button.add {
 #twsearch-help-options dd {
   margin: 0;
 }
+
+/* Which build of the page this is: small and out of the way, but there. */
+#build-stamp {
+  font-size: 0.7em;
+  opacity: 0.35;
+  margin-left: 0.6em;
+  font-family: monospace;
+  white-space: nowrap;
+}

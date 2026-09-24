@@ -35,5 +35,14 @@ function createTwsearchWorker(): Worker {
 }
 
 buildPage();
+// Which build this is.  A browser holding an old page looks exactly like a
+// new one otherwise, and then every difference in behaviour is a mystery.
+declare const GYRELAB_BUILD: string;
+const stamp = typeof GYRELAB_BUILD === "string" ? GYRELAB_BUILD : "unknown";
+const stampElem = document.getElementById("build-stamp");
+if (stampElem) {
+  stampElem.textContent = stamp;
+}
+(globalThis as any).gyrelabBuild = stamp;
 // Expose as a global for debugging.
 (globalThis as any).app = new TwizzleExplorerApp(createTwsearchWorker);

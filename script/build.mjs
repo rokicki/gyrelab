@@ -9,6 +9,7 @@
 // the filesystem (file://).  Browsers refuse module scripts and worker
 // scripts from file:// URLs, so the site build uses one classic script, with
 // the twsearch worker's code embedded in it and started from a Blob URL.
+import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, readFileSync, rmSync, watch, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import * as esbuild from "esbuild";
@@ -34,6 +35,22 @@ console.log(
     ? `cubing.js: the local checkout (${cubingLib})`
     : "cubing.js: the published cubing package in node_modules",
 );
+// What this build is, so a page can say which one it is: without that, an
+// old page held by a browser looks exactly like a new one, and every
+// difference in behaviour is a mystery.
+function buildStamp() {
+  let commit = "unknown";
+  try {
+    commit = execFileSync("git", ["describe", "--always", "--dirty", "--tags"], {
+      cwd: new URL("..", import.meta.url).pathname,
+      encoding: "utf8",
+    }).trim();
+  } catch {}
+  return `${commit} ${new Date().toISOString().replace(/\.\d+Z$/, "Z")}`;
+}
+const stamp = buildStamp();
+console.log(`build: ${stamp}`);
+
 const assets = ["help.html", "favicon.ico", "app-icon.png"];
 const siteIndex = process.argv.indexOf("--site");
 
@@ -49,7 +66,7 @@ if (siteIndex >= 0) {
     target: "es2022",
     minify: true,
     write: false,
-    define: { "import.meta.url": "self.location.href" },
+    define: { GYRELAB_BUILD: JSON.stringify(stamp), "import.meta.url": "self.location.href" },
     plugins: cubingPlugins,
     logLevel: "warning",
   });
@@ -62,6 +79,7 @@ if (siteIndex >= 0) {
     minify: true,
     define: {
       TWSEARCH_WORKER_SOURCE: JSON.stringify(worker.outputFiles[0].text),
+      GYRELAB_BUILD: JSON.stringify(stamp),
       "import.meta.url": "document.baseURI",
     },
     loader: { ".woff": "file", ".woff2": "file", ".html": "text" },
@@ -119,6 +137,7 @@ if (siteIndex >= 0) {
     },
   };
   const options = {
+    define: { GYRELAB_BUILD: JSON.stringify(stamp) },
     plugins: [copyStatic, ...cubingPlugins],
     entryPoints: [src + "main.ts", src + "twsearch-worker.ts", src + "index.css"],
     outdir: dist,

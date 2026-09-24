@@ -49,7 +49,7 @@
     </FilesMatch>
     # These keep their names when they change, so they must be checked each
     # time; without this a browser can keep serving an old Explorer.
-    <FilesMatch "^(index\.html|help\.html|main\.js|index\.css|favicon\.ico|app-icon\.png)$">
+    <FilesMatch "^(index\.html|help\.html|boot\.js|main\.js|index\.css|favicon\.ico|app-icon\.png)$">
         Header set Cache-Control "no-cache"
     </FilesMatch>
     Header set X-Content-Type-Options "nosniff"
