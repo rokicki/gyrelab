@@ -6,7 +6,7 @@
     <textarea></textarea>
   </dialog>
   <div class="title">
-    <span><span>🌀</span>
+    <span><span id="title-spinner" title="Gyrelab">🌀</span>
       Gyrelab <span style="opacity: 0.3">ᴬᴸᴾᴴᴬ</span><span id="build-stamp"
         title="which build of this page you are looking at"></span></span>
   </div>
@@ -118,7 +118,7 @@
             placeholder="default (e.g. U,R,F or u,r,f)" /></label>
         <label class="twsearch-row">Options <input type="text" id="twsearch-args" value="-v2" /></label>
         <label class="twsearch-row" id="twsearch-keepawake-row"
-          title="Browsers slow a hidden tab to about a fifth of its speed, and searching in the browser slows with it.  This plays a silent tone so the tab counts as one that is doing something, which stops that.  It is a trick, it costs battery, and it is only worth it while you are plugged in.  Keeping this window visible, even unfocused, costs nothing and works as well."
+          title="Browsers slow a hidden tab to about a fifth of its speed, and searching in the browser slows with it.  While a search is running, this plays a tone too quiet to hear, so the tab counts as one that is doing something and keeps its speed.  It is a trick, it costs battery, and it is only worth it while you are plugged in.  Keeping this window visible, even unfocused, costs nothing and works as well."
           ><input type="checkbox" id="twsearch-keepawake" /> Disable browser throttling (plays a silent tone)</label>
         <div id="twsearch-status"></div>
         <ol id="twsearch-solutions"></ol>
@@ -174,12 +174,15 @@
               on screen runs at full speed.  Putting this window beside a terminal
               is enough.</p>
             <p><b>Disable browser throttling</b> is for when the tab really must be
-              hidden.  It plays a tone far too quiet to hear, which makes the
-              browser treat this as a tab that is doing something and leave its
-              speed alone.  It is a trick on the browser's battery saving, so it is
-              off unless you turn it on, and it is worth it only while you are
-              plugged in.  The tab will show the speaker mark that any tab playing
-              audio shows.</p>
+              hidden.  While a search is running it plays a tone far too quiet to
+              hear, which makes the browser treat this as a tab that is doing
+              something and leave its speed alone.  It is a trick on the browser's
+              battery saving, so it is off unless you turn it on, and it is worth
+              it only while you are plugged in.  The tone stops when the search
+              does, so the speaker mark on the tab is also a sign that a search is
+              still running.</p>
+            <p>So is the spiral beside the title, which turns while twsearch is
+              working, whichever tab you are looking at.</p>
             <p>None of this applies to <b>twsearch running natively</b>, which is
               not a browser tab at all.</p>
 

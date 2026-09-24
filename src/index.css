@@ -389,3 +389,22 @@ twisty-puzzle-description-input button.add {
   overflow: visible;
   vertical-align: middle;
 }
+
+/* The spiral turns while a search is running: the one moving thing on the
+   page says that something is happening, from wherever you are looking. */
+#title-spinner {
+  display: inline-block;
+}
+#title-spinner.searching {
+  animation: gyre 1.4s linear infinite;
+}
+@keyframes gyre {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #title-spinner.searching {
+    animation: gyre 3s steps(8) infinite;
+  }
+}

@@ -134,6 +134,8 @@ export class TwsearchSolvePanel {
   argsInput = element<HTMLInputElement>("twsearch-args");
   keepAwakeInput = element<HTMLInputElement>("twsearch-keepawake");
   #tone = new SilentTone();
+  #spinner = document.getElementById("title-spinner");
+  #searching = false;
   movesInput = element<HTMLInputElement>("twsearch-moves");
   statusElem = element<HTMLDivElement>("twsearch-status");
   solutionsElem = element<HTMLOListElement>("twsearch-solutions");
@@ -170,7 +172,7 @@ export class TwsearchSolvePanel {
     });
     this.cancelButton.addEventListener("click", () => this.cancel());
     this.keepAwakeInput.addEventListener("change", () => {
-      this.#tone.set(this.keepAwakeInput.checked);
+      this.#toneForState();
     });
     this.exportButton.addEventListener("click", () => void this.showExport());
     const helpDialog = element<HTMLDialogElement>("twsearch-help-dialog");
@@ -274,6 +276,25 @@ export class TwsearchSolvePanel {
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 10000);
     this.exportNote.textContent = `Saved ${this.exportName}.`;
+  }
+
+  /**
+   *   A search is on: the spiral in the title turns, so that something is
+   *   moving wherever you are looking, and the tone plays if it was asked
+   *   for.  Only while searching: a tone with nothing to keep awake is
+   *   noise, and it doubles as a sign that the search is still going.
+   */
+  setSearching(on: boolean): void {
+    this.#searching = on;
+    this.#spinner?.classList.toggle("searching", on);
+    if (this.#spinner) {
+      this.#spinner.title = on ? "searching" : "Gyrelab";
+    }
+    this.#toneForState();
+  }
+
+  #toneForState(): void {
+    this.#tone.set(this.#searching && this.keepAwakeInput.checked);
   }
 
   setStatus(text: string): void {
@@ -414,6 +435,7 @@ export class TwsearchSolvePanel {
     }
     const id = `solve-${this.nextID++}`;
     this.running = { id, channel };
+    this.setSearching(true);
     this.solveButton.disabled = true;
     this.cancelButton.disabled = false;
 
@@ -489,6 +511,7 @@ export class TwsearchSolvePanel {
       final ??= "Finished";
       showStatus();
       this.running = null;
+      this.setSearching(false);
       this.solveButton.disabled = false;
       this.cancelButton.disabled = true;
     }
