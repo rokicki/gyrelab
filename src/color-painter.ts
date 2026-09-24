@@ -107,6 +107,14 @@ export class ColorPainter {
     moveSetEvents.addEventListener("change", () => {
       if (this.puzzle) this.scheduleValidate();
     });
+    // The position can move while this tab is the one showing: Scramble and
+    // Reset set it, and an alg can be applied from elsewhere.  The net
+    // follows it, as it already did when the tab was opened again.
+    const follow = () => {
+      if (this.active && this.puzzle) void this.followPosition();
+    };
+    app.twistyPlayer.experimentalModel.setupTransformation.addFreshListener(follow);
+    app.twistyPlayer.experimentalModel.puzzleAlg.addFreshListener(follow);
     // A new puzzle means a new net; the painting is discarded.
     app.twistyPlayer.experimentalModel.puzzleLoader.addFreshListener(() => {
       this.puzzle = null;
@@ -126,11 +134,7 @@ export class ColorPainter {
     if (this.puzzle?.description === description) {
       // Same puzzle: keep the net, but follow the position if it moved on
       // another tab.
-      const colors = await this.currentPositionColors();
-      if (colors && serializeColors(colors) !== this.#fromPosition) {
-        this.setColors(colors, false);
-        this.#fromPosition = serializeColors(colors);
-      }
+      await this.followPosition();
       return;
     }
     const pg = await this.app.puzzleGeometry();
@@ -207,6 +211,19 @@ export class ColorPainter {
   }
 
   /** The colors of the Explorer's current position, for this puzzle. */
+  /**
+   *   Show what the puzzle shows, unless the net is already showing it.
+   *   A painting of our own leaves `#fromPosition` equal to it, so applying
+   *   one does not come back around as a change to follow.
+   */
+  async followPosition(): Promise<void> {
+    const colors = await this.currentPositionColors();
+    if (colors && serializeColors(colors) !== this.#fromPosition) {
+      this.setColors(colors, false);
+      this.#fromPosition = serializeColors(colors);
+    }
+  }
+
   async currentPositionColors(): Promise<Colors | null> {
     if (!this.puzzle) return null;
     const model = this.app.twistyPlayer.experimentalModel;
@@ -333,7 +350,7 @@ export class ColorPainter {
       const key = JSON.stringify(data);
       if (key !== this.#applied) {
         this.#applied = key;
-        void this.applyPosition(data);
+        void this.applyPosition(data, patternToColors(puzzle.model, reading.pattern));
       }
       this.statusElem.textContent = "Valid; this is now the position.";
     } else {
@@ -364,10 +381,13 @@ export class ColorPainter {
   }
 
   /** Makes the position the Explorer's: set as the setup, alg cleared. */
-  async applyPosition(data: KTransformationData): Promise<void> {
-    // The net now shows the Explorer's position, so leaving and returning
-    // must not treat it as a change made elsewhere.
-    this.#fromPosition = serializeColors(this.colors);
+  async applyPosition(data: KTransformationData, shown: Colors): Promise<void> {
+    // What the puzzle will show once this is applied, which is not what is
+    // painted when some of it was left blank: the puzzle has to put
+    // something in those places.  Remembering what it will show is what
+    // lets a later change be told from this one, so that following the
+    // position does not wipe the blanks out again.
+    this.#fromPosition = serializeColors(shown);
     const player = this.app.twistyPlayer;
     const kpuzzle = await player.experimentalModel.kpuzzle.get();
     player.alg = "";

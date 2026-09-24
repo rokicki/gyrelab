@@ -1,0 +1,53 @@
+// The net shows what the puzzle shows.  A position set from elsewhere
+// (Scramble, Reset, an alg) reaches the Colors tab while it is the one
+// showing, and a painting of its own is not mistaken for one of those.
+// Start `npm run dev` first.
+//
+//    node test/net-follows-test.mjs
+import { chromium } from "playwright";
+
+const base = process.env.EXPLORER_URL ?? "http://localhost:3334/";
+let failures = 0;
+const check = (ok, label, detail = "") => {
+  console.log(`${ok ? "ok  " : "FAIL"} ${label}${detail ? " -- " + detail : ""}`);
+  if (!ok) failures++;
+};
+
+const browser = await chromium.launch({ channel: "chrome", headless: true });
+const page = await browser.newPage({ viewport: { width: 1100, height: 700 } });
+page.on("pageerror", (e) => { console.log("  [pageerror]", e.message); failures++; });
+await page.goto(`${base}?puzzle=2x2x2`);
+await page.waitForSelector("twisty-player");
+await page.click('button[data-tab-id="color-picker"]');
+await page.waitForTimeout(900);
+
+const net = () =>
+  page.$$eval("polygon.sticker", (ps) => ps.map((p) => p.getAttribute("fill") ?? p.style.fill).join(","));
+const blanks = () =>
+  page.evaluate(() => [...globalThis.app.colorPainter.colors.values()].filter((c) => !c).length);
+
+const solved = await net();
+await page.click("#scramble");
+await page.waitForTimeout(1500);
+check((await net()) !== solved, "Scramble reaches the net while the Colors tab is showing");
+check(/current position/i.test((await page.textContent("#color-status")) ?? ""),
+  "and the net says it is the current position", (await page.textContent("#color-status"))?.trim());
+
+// A painting with blanks in it must survive being applied: the puzzle puts
+// something in the blank places, which is not what was painted.
+await page.click('#color-palette button[data-color=""]');
+for (const f of [0, 1, 2]) await page.click(`polygon#CORNERS-l0-o${f}`);
+await page.waitForTimeout(1400);
+check((await blanks()) === 3, "a blanked piece stays blank once the position is taken", `${await blanks()} blank stickers`);
+check(/this is now the position/i.test((await page.textContent("#color-status")) ?? ""),
+  "and it is taken as the position", (await page.textContent("#color-status"))?.trim());
+check(((await page.textContent("#color-problems")) ?? "").trim() === "", "with no problems reported");
+
+// Scrambling again replaces the painting, blanks and all.
+await page.click("#scramble");
+await page.waitForTimeout(1500);
+check((await blanks()) === 0, "and a later Scramble replaces it", `${await blanks()} blank stickers`);
+
+await browser.close();
+console.log(failures === 0 ? "All net-follows checks passed." : `${failures} failure(s).`);
+process.exit(failures === 0 ? 0 : 1);
