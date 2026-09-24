@@ -46,7 +46,9 @@ function buildStamp() {
       encoding: "utf8",
     }).trim();
   } catch {}
-  return `${commit} ${new Date().toISOString().replace(/\.\d+Z$/, "Z")}`;
+  // To the minute: enough to tell two builds of the same commit apart.
+  const when = new Date().toISOString().replace("T", " ").slice(0, 16);
+  return `${commit} ${when}`;
 }
 const stamp = buildStamp();
 console.log(`build: ${stamp}`);

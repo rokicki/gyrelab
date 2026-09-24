@@ -23,6 +23,11 @@ body {
 
 .title {
   font-size: 2rem;
+  /* The build stamp sits at the end of this line; it may hang off the
+     right on a narrow screen, but it must not push itself onto a line of
+     its own and take up room, nor make the page scroll sideways. */
+  white-space: nowrap;
+  overflow: hidden;
   padding: 1rem 0 0rem;
   display: grid;
   justify-content: center;
@@ -369,9 +374,18 @@ twisty-puzzle-description-input button.add {
 
 /* Which build of the page this is: small and out of the way, but there. */
 #build-stamp {
-  font-size: 0.7em;
+  /* Absolute, not a fraction of the title: the title is 2rem, and a
+     fraction of that is a large number for something nobody reads twice. */
+  font-size: 0.7rem;
   opacity: 0.35;
-  margin-left: 0.6em;
   font-family: monospace;
   white-space: nowrap;
+  /* No width of its own: the title stays centred as though this were not
+     here, and on a narrow screen the text hangs off the right rather than
+     wrapping onto a line of its own or pushing the page sideways. */
+  display: inline-block;
+  width: 0;
+  padding-left: 0.6em;
+  overflow: visible;
+  vertical-align: middle;
 }
