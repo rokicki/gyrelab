@@ -302,50 +302,6 @@
       and running twsearch natively on your own machine for the searches that are
       too big for the browser.
     </p>
-    <h2 id="puzzlegeometry-command-line">PuzzleGeometry Command Line</h2>
-    <p>
-      Puzzlegeometry can also be used from the command line, from a cubing.js
-      checkout. Usage is as follows:
-    </p>
-    <pre><code>node dist/bin/puzzle-geometry-bin.js [options] [puzzle]</code></pre>
-    <p>
-      where puzzle is either the name of the one of the predefined puzzles (see
-      the dropdown in Gyrelab) or a puzzle geometry description such as c f
-      0.3333. Some of the options are as follows; <code>--help</code> lists
-      them all, since this program lives in cubing.js and gains options there:
-    </p>
-    <pre><code>-q, --quiet:  be less verbose
--v, --verbose:  be more verbose
---ksolve:  generate ksolve output
---gap:  generate gap output
---mathematica:  generate mathematica output
---svg:  generate svg output
---ss:  execute the Schreier-Sims algorithm
---canon:  do the canonical analysis
---optimize:  optimize the representation
---allmoves:  include moves for all slices
---outerblockmoves:  prefer outer block moves to slice moves
---vertexmoves:  prefer vertex moves to face moves on tetrahedron
---nocorners:  disable corners
---noedges:  disable edges
---nocenters:  disable centers
---moves movelist:  only include moves listed; moves separated by commas
---scramble n:  scramble the puzzle with n random moves
---rotations:  include whole-puzzle rotations as moves
---graycorners, --grayedges, --graycenters:  gray out those pieces
---noorientation:  ignore orientation
---orientcenters:  track center orientation</code></pre>
-    <p>
-      The GAP output consists of a set of move definitions (all starting with
-      M_) followed by a definition of Gen that is a list of all moves, and a
-      variable ip which contains a set of tuples of identical pieces. To
-      calculate the size of the supergroup (that is, not taking into account
-      full-puzzle rotations or identical pieces), use the GAP command
-      Size(Group(Gen));. To calculate how much this is reduced by identical
-      pieces, use the GAP command Size(Stabilizer(Group(Gen), ip,
-      OnTuplesSets));.
-    </p>
-
     <p>
       Gyrelab is being developed by Tomas Rokicki and Claude Code, based on
       cubing.js and twsearch, with great thanks to Lucas Garron.
